@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>دردشة محلية بالذكاء الاصطناعي</title>
+<style>
+:root{--bg:#0f172a;--panel:#111c33;--ai:#1e293b;--user:#0284c7;--line:#27344d;--text:#e2e8f0;--muted:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--errbg:#450a0a}
+:root[data-theme=light]{--bg:#f1f5f9;--panel:#fff;--ai:#e6edf5;--line:#d3dde9;--text:#0f172a;--muted:#5b6b82;--errbg:#fee2e2}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;display:grid;grid-template-columns:270px 1fr;grid-template-rows:auto auto 1fr auto;grid-template-areas:"side head" "side note" "side main" "side foot";overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--user);outline-offset:2px}
+
+/* Sidebar */
+aside{grid-area:side;background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;overflow:auto;position:relative;z-index:16}
+aside h2{font-size:15px;margin-bottom:10px}
+aside section{margin-bottom:22px}
+.model{background:var(--ai);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+.model b{display:flex;align-items:center;gap:8px;font-weight:600}
+.model small{color:var(--muted);display:block;margin-top:3px;direction:ltr;text-align:right;word-break:break-all}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.dot.loading{background:var(--warn);animation:pulse 1s infinite}
+.dot.ready{background:var(--ok)}
+.dot.error{background:var(--err)}
+@keyframes pulse{50%{opacity:.4}}
+.bar{height:5px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--user);transition:width .2s}
+.model.loading .bar{display:block}
+.caps{font-size:13px;color:var(--muted);line-height:1.9}
+.caps b{color:var(--text);font-weight:600}
+
+/* Header */
+header{grid-area:head;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line)}
+header h1{font-size:17px;flex:1}
+.badge{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--ai);border:1px solid var(--line)}
+.ghost{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);font-size:13px}
+.ghost:hover{background:var(--ai)}
+#menu{display:none}
+.note{grid-area:note;background:#0c4a6e;color:#e0f2fe;font-size:13px;padding:8px 18px;display:flex;gap:10px;align-items:center}
+.note button{margin-inline-start:auto;display:grid}
+
+/* Messages */
+main{grid-area:main;overflow-y:auto;padding:22px 18px;scroll-behavior:smooth}
+.wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:85%;padding:11px 15px;border-radius:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{background:var(--user);color:#fff;align-self:flex-start;border-end-start-radius:4px}
+.msg.assistant{background:var(--ai);align-self:flex-end;border-end-end-radius:4px}
+.msg.error{background:var(--errbg);border:1px solid var(--err)}
+.msg img{max-width:100%;max-height:240px;border-radius:8px;display:block;margin-bottom:8px}
+.status{color:var(--muted);font-size:13px;display:block;margin-bottom:4px}
+.empty{text-align:center;color:var(--muted);margin-top:12vh}
+.empty h2{color:var(--text);margin-bottom:8px}
+.typing{display:inline-flex;gap:4px;vertical-align:middle}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.typing i{animation:none}main{scroll-behavior:auto}}
+
+/* Footer / input */
+footer{grid-area:foot;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+.box{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:6px;background:var(--ai);border:1px solid var(--line);border-radius:14px;padding:6px;position:relative}
+textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;resize:none;max-height:160px;padding:9px 8px;outline:none;line-height:1.6}
+.ic{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;transition:background .15s}
+.ic:hover{background:var(--line)}
+.ic.rec{background:var(--err);color:#fff;animation:b 1s infinite}
+.ic.ok{color:var(--ok)}
+#send{background:var(--user);color:#fff}
+#send .i{transform:scaleX(-1)}
+#send:disabled{opacity:.4;cursor:not-allowed}
+#stop{background:var(--err);color:#fff;display:none}
+.hint{max-width:820px;margin:6px auto 0;font-size:12px;color:var(--muted);text-align:center}
+
+/* Icons, popover, sidebar controls */
+.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+[hidden]{display:none!important}
+.pop{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:200px;box-shadow:0 8px 24px #0005;z-index:5}
+.pop button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:8px;font-size:14px;text-align:start}
+.pop button:hover{background:var(--ai)}
+select{width:100%;background:var(--ai);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit;font-size:13px;margin-bottom:8px}
+select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
+.wide{width:100%;justify-content:center}
+.sub{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px}
+.acts{display:flex;gap:4px;margin-top:6px}
+.acts button{padding:5px 7px;border-radius:6px;color:var(--muted);display:grid}
+.acts button:hover{background:var(--line)}
+.acts button.ok{color:var(--ok)}
+.diag{font-size:11px;color:var(--muted);white-space:pre-wrap;direction:ltr;text-align:left;max-height:180px;overflow:auto;background:var(--ai);border-radius:8px;padding:8px}
+.history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;margin-bottom:4px;background:var(--ai);color:var(--text)}
+.history-item:hover{background:var(--line)}
+.history-item.active{border:1px solid var(--user)}
+.history-item .title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-inline-end:6px}
+.history-item .del-btn{color:var(--muted);display:none}
+.history-item:hover .del-btn{display:block}
+.history-item .del-btn:hover{color:var(--err)}
+
+/* Mobile */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15;backdrop-filter:blur(2px)}
+#overlay.show{display:block}
+@media (max-width:800px){
+  body{grid-template-columns:1fr;grid-template-areas:"head" "note" "main" "foot"}
+  aside{position:fixed;inset:0 0 0 auto;width:280px;max-width:85vw;z-index:20;transform:translateX(100%);transition:transform .25s}
+  aside.open{transform:none}
+  #menu{display:inline-flex}
+  .msg{max-width:94%}
+}
+</style>
+</head>
+<body>
+<!-- SVG icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-img" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 16-5-5-8 8"/></symbol>
+<symbol id="i-aud" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14"/><path d="m21 3-7 18-4-7-7-4z"/></symbol>
+<symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6 19 19M5 19l1.4-1.4M17.6 6.4 19 5"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 5v3h3M4 13a8 8 0 0 0 14.5 4M20 19v-3h-3"/></symbol>
+<symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
+<symbol id="i-speaker" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></symbol>
+</svg>
+
+<div id="overlay"></div>
+
+<aside id="side">
+  <section>
+    <h2>المحادثات</h2>
+    <button class="ghost wide" id="newChatBtn" style="margin-bottom:10px"><svg class="i"><use href="#i-plus"/></svg> محادثة جديدة</button>
+    <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
+  </section>
+  <section>
+    <h2>نموذج الدردشة</h2>
+    <select id="modelSel" aria-label="اختيار النموذج" dir="ltr"></select>
+    <p class="sub" id="modelNote"></p>
+    <label class="sub" style="display:flex;gap:6px;align-items:flex-start"><input type="checkbox" id="gpuOpt"><span>WebGPU (تجريبي): أسرع، لكن قد يتجمد على بعض الهواتف.</span></label>
+    <button class="ghost wide" id="unload"><svg class="i"><use href="#i-chip"/></svg>تفريغ النموذج من الذاكرة</button>
+  </section>
+  <section>
+    <h2>حالة النماذج</h2>
+    <div class="model" id="m-chat"><b><span class="dot"></span>الدردشة</b><small>—</small><div class="bar"><i></i></div></div>
+    <div class="model" id="m-asr"><b><span class="dot"></span>تحويل الصوت إلى نص</b><small>Xenova/whisper-tiny.en</small><div class="bar"><i></i></div></div>
+    <div class="model" id="m-cap"><b><span class="dot"></span>وصف الصور</b><small>Xenova/vit-gpt2-image-captioning</small><div class="bar"><i></i></div></div>
+  </section>
+  <section>
+    <h2>قدرات جهازك</h2>
+    <div class="caps" id="caps"></div>
+  </section>
+  <section>
+    <h2>سجل المحرّك</h2>
+    <pre id="diag" class="diag"></pre>
+  </section>
+</aside>
+
+<header>
+  <button class="ghost" id="menu" aria-label="القائمة"><svg class="i"><use href="#i-menu"/></svg></button>
+  <h1>دردشة ذكاء اصطناعي محلية</h1>
+  <span class="badge" id="backend">…</span>
+  <button class="ghost" id="theme" aria-label="تبديل المظهر"></button>
+  <button class="ghost" id="clear"><svg class="i"><use href="#i-trash"/></svg>مسح</button>
+</header>
+
+<div class="note" id="note">
+  <span>تُعالَج محادثاتك داخل المتصفح فقط ولا تُرسَل إلى أي خادم. التحميل الأول يحتاج إنترنت، وبعده يُحفَظ في ذاكرة المتصفح.</span>
+  <button id="noteX" aria-label="إغلاق"><svg class="i"><use href="#i-x"/></svg></button>
+</div>
+
+<main id="main"><div class="wrap" id="log"></div></main>
+
+<footer>
+  <div class="box">
+    <button class="ic" id="speak" title="قراءة آخر رد بصوت" aria-label="قراءة آخر رد"><svg class="i"><use href="#i-speaker"/></svg></button>
+    <button class="ic" id="plus" title="إرفاق" aria-label="إرفاق" aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-plus"/></svg></button>
+    <div class="pop" id="pop" hidden>
+      <button id="img"><svg class="i"><use href="#i-img"/></svg>إرفاق صورة</button>
+      <button id="aud"><svg class="i"><use href="#i-aud"/></svg>رفع ملف صوتي</button>
+      <button id="mic"><svg class="i"><use href="#i-mic"/></svg>تسجيل صوتي</button>
+    </div>
+    <textarea id="input" rows="1" placeholder="اكتب رسالتك… (Enter للإرسال، Shift+Enter لسطر جديد)"></textarea>
+    <button class="ic" id="stop" title="إيقاف التوليد" aria-label="إيقاف"><svg class="i"><use href="#i-stop"/></svg></button>
+    <button class="ic" id="send" title="إرسال" aria-label="إرسال"><svg class="i"><use href="#i-send"/></svg></button>
+  </div>
+  <p class="hint">النماذج الصغيرة (60MB-600MB) تُحمَّل عند أول استخدام. Qwen هو الأفضل للعربية. الصوت يدعم الإنجليزية فقط.</p>
+  <input type="file" id="imgFile" accept="image/*" hidden>
+  <input type="file" id="audFile" accept="audio/*" hidden>
+</footer>
+
+<script type="text/js-worker" id="worker-src">
+// ============ Load Transformers.js v3 ============
+let pipeline, TextStreamer, InterruptableStoppingCriteria, env, importErr = "";
+for (const url of [
+  "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1",
+  "https://esm.sh/@huggingface/transformers@3.5.1",
+]) {
+  try {
+    ({ pipeline, TextStreamer, InterruptableStoppingCriteria, env } = await import(url));
+    importErr = ""; break;
+  } catch (e) { importErr = String((e && e.message) || e); console.warn(url, e); }
+}
+const READY = !!pipeline;
+if (READY) {
+  env.allowLocalModels = false;
+  try { env.backends.onnx.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1; } catch (e) {}
+}
+const post = (m) => self.postMessage(m);
+const hasGPU = !!(self.navigator && self.navigator.gpu);
+const log = (text) => post({ type: "log", text });
+setInterval(() => post({ type: "hb" }), 1000);
+log(READY ? "المكتبة جاهزة" : "فشل تحميل المكتبة: " + importErr);
+
+let cache = {};
+let chatId = null, chatIdx = -1;
+const startIdx = {};
+let stopFlag = false;
+const stopper = READY ? new InterruptableStoppingCriteria() : null;
+
+// ============ Model registry ============
+// ✅ أُعيد بناء القائمة بالكامل: نماذج ONNX حقيقية ومتاحة فعلاً
+const MODELS = {
+  // Chat / Instruct
+  qwen:      { kind: "chat",   name: "Xenova/Qwen1.5-0.5B-Chat",             dtypes: ["q8", "q4"] },
+  qwen25:    { kind: "chat",   name: "onnx-community/Qwen2.5-0.5B-Instruct", dtypes: ["q4", "q8"] },
+  qwen3:     { kind: "chat",   name: "onnx-community/Qwen3-0.6B-ONNX",       dtypes: ["q4", "q8"] },
+  lfm2:      { kind: "chat",   name: "onnx-community/LFM2-350M-ONNX",        dtypes: ["q4", "q8"] },
+  smol360:   { kind: "chat",   name: "onnx-community/SmolLM2-360M-Instruct", dtypes: ["q4", "q8"] },
+  smol135:   { kind: "chat",   name: "onnx-community/SmolLM2-135M-Instruct", dtypes: ["q4", "q8"] },
+  // T5 (seq2seq)
+  lamini:    { kind: "t5",     name: "Xenova/LaMini-Flan-T5-77M",            dtypes: ["q8", "fp32"] },
+  lamini248: { kind: "t5",     name: "Xenova/LaMini-Flan-T5-248M",           dtypes: ["q8", "fp32"] },
+  flansmall: { kind: "t5",     name: "Xenova/flan-t5-small",                 dtypes: ["q8", "fp32"] },
+  flanbase:  { kind: "t5",     name: "Xenova/flan-t5-base",                  dtypes: ["q8", "fp32"] },
+  t5small:   { kind: "t5",     name: "Xenova/t5-small",                      dtypes: ["q8", "fp32"] },
+  // Completion (raw LM)
+  distilgpt2:{ kind: "alpaca", name: "Xenova/distilgpt2",                    dtypes: ["q8", "fp32"] },
+  gpt2:      { kind: "alpaca", name: "Xenova/gpt2",                          dtypes: ["q8", "fp32"] },
+  opt125:    { kind: "alpaca", name: "Xenova/opt-125m",                      dtypes: ["q8", "fp32"] },
+  lgpt:      { kind: "alpaca", name: "Xenova/LaMini-GPT-124M",               dtypes: ["q8", "fp32"] },
+};
+for (const m of Object.values(MODELS)) m.task = m.kind === "t5" ? "text2text-generation" : "text-generation";
+
+// ============ Helpers ============
+function optsFor(id, gpu) {
+  const m = MODELS[id] || MODELS.qwen;
+  const wasm = m.dtypes.map((dtype) => ({ device: "wasm", dtype }));
+  return gpu && hasGPU && m.kind === "chat" ? [{ device: "webgpu", dtype: "q4" }, ...wasm] : wasm;
+}
+
+async function dispose(key) {
+  const p = cache[key]; delete cache[key];
+  if (p) post({ type: "evicted", key });
+  if (p) { try { const pl = await p; if (pl.dispose) await pl.dispose(); } catch (e) { console.warn(e); } }
+}
+
+async function freeOthers(keep) {
+  for (const k of Object.keys(cache)) if (k !== keep) await dispose(k);
+}
+
+// ============ Generic pipeline loader with fallback ============
+function load(key, task, model, optionSets) {
+  if (cache[key]) return cache[key];
+  cache[key] = (async () => {
+    const files = {};
+    let lastPost = 0;
+    const cb = (p) => {
+      if (p.status !== "progress") return;
+      files[p.file] = p;
+      let l = 0, t = 0;
+      for (const f of Object.values(files)) { l += f.loaded || 0; t += f.total || 0; }
+      const now = Date.now();
+      if (now - lastPost > 250) { lastPost = now; post({ type: "progress", key, pct: t ? (l / t) * 100 : 0 }); }
+    };
+    post({ type: "loading", key });
+    let last;
+    for (const o of optionSets) {
+      try {
+        log("تحميل " + model + " (" + o.device + "/" + (o.dtype || "default") + ")");
+        const p = await pipeline(task, model, { ...o, progress_callback: cb });
+        log("جاهز: " + model);
+        post({ type: "ready", key, device: o.device || "wasm" });
+        return p;
+      } catch (e) { last = e; console.warn(key, o, e); }
+    }
+    delete cache[key];
+    throw last;
+  })();
+  return cache[key];
+}
+
+// ============ ✅ إصلاح جذري: loaders غير تكرارية ============
+const loaders = {
+  chat: async (key, idx, m, o) => {
+    // Fast path: same model + same option set + cached
+    if (cache["chat"] && chatId === key && chatIdx === idx) return cache["chat"];
+    // Dispose previous chat model if switching
+    if (cache["chat"]) await dispose("chat");
+    await freeOthers("chat");
+    chatId = key; chatIdx = idx;
+    return load("chat", m.task, m.name, [o]);
+  },
+  asr: async () => {
+    if (cache["asr"]) return cache["asr"];
+    await freeOthers("asr");
+    return load("asr", "automatic-speech-recognition", "Xenova/whisper-tiny.en", [{ device: "wasm", dtype: "q8" }]);
+  },
+  cap: async () => {
+    if (cache["cap"]) return cache["cap"];
+    await freeOthers("cap");
+    return load("cap", "image-to-text", "Xenova/vit-gpt2-image-captioning", [{ device: "wasm", dtype: "q8" }]);
+  },
+};
+
+// ============ Chat generation ============
+async function runChat(data, id) {
+  const m = MODELS[data.model] || MODELS.qwen;
+  const t5 = m.kind === "t5";
+  const key = data.model + (data.gpu ? "+gpu" : "");
+  const optList = optsFor(data.model, data.gpu);
+  let started = false;
+  stopFlag = false;
+
+  for (let i = startIdx[key] || 0; i < optList.length; i++) {
+    const last = i === optList.length - 1;
+    try {
+      const gen = await loaders.chat(key, i, m, optList[i]);
+      if (!started) { started = true; post({ type: "start", id }); }
+      log("بدء التوليد");
+      if (stopper) stopper.reset();
+
+      let streamed = "";
+      // ✅ TextStreamer جديد لكل محاولة (كان خطأ في النسخة الأصلية)
+      const streamer = new TextStreamer(gen.tokenizer, {
+        skip_prompt: true, skip_special_tokens: true,
+        callback_function: (t) => {
+          if (!streamed) log("وصل أول رمز");
+          streamed += t;
+          post({ type: "token", id, text: t });
+        },
+      });
+
+      const base = { max_new_tokens: t5 ? 200 : 256, streamer, stopping_criteria: stopper };
+      const inputs = t5 ? [data.messages, data.plain] : [data.messages];
+      let text = "";
+
+      for (const input of inputs) {
+        if (!input) continue;
+        const o = m.kind === "chat"
+          ? { ...base, do_sample: true, temperature: 0.7, top_p: 0.9, repetition_penalty: 1.1 }
+          : { ...base, do_sample: false, repetition_penalty: t5 ? 1.0 : 1.2 };
+
+        const result = await gen(input, o);
+        text = streamed.trim();
+        if (!text) {
+          const g = result[0].generated_text;
+          if (Array.isArray(g)) {
+            const lastMsg = g[g.length - 1];
+            text = (lastMsg && lastMsg.content) ? lastMsg.content.trim() : "";
+          } else if (typeof g === "string") {
+            text = g.replace(input, "").trim();
+          }
+        }
+        if (text.trim() || stopFlag) break;
+      }
+
+      text = text.replace(/^\s*(Assistant|### Response):\s*/i, "");
+
+      if (text.trim() || stopFlag) {
+        post({ type: "done", id, text });
+        return;
+      }
+
+      // لم يُنتج نصاً — جرّب الخيار التالي
+      await dispose("chat"); startIdx[key] = i + 1;
+      if (last) {
+        post({ type: "error", id, message: "فشل التوليد: النموذج لم يُنتج أي نص. جرّب نموذجاً آخر." });
+        return;
+      }
+    } catch (e) {
+      console.warn("chat attempt failed", i, e);
+      if (last || stopFlag) throw e;
+      await dispose("chat"); startIdx[key] = i + 1;
+    }
+  }
+}
+
+// ============ Message handler ============
+self.onmessage = async ({ data }) => {
+  const { type, id } = data;
+  if (type === "stop") {
+    stopFlag = true;
+    if (stopper) stopper.interrupt();
+    return;
+  }
+  if (!READY && (type === "chat" || type === "asr" || type === "caption")) {
+    post({ type: "error", id, message: "تعذّر تحميل مكتبة Transformers.js. تحقق من الإنترنت أو من حظر cdn.jsdelivr.net. " + importErr });
+    return;
+  }
+  if (type === "unload") {
+    for (const k of Object.keys(cache)) await dispose(k);
+    cache = {}; chatId = null; chatIdx = -1;
+    post({ type: "unloaded" });
+    return;
+  }
+  try {
+    if (type === "chat") {
+      await runChat(data, id);
+    } else if (type === "asr") {
+      const asr = await loaders.asr();
+      const out = await asr(data.audio, { chunk_length_s: 30 });
+      post({ type: "asr", id, text: (out.text || "").trim() });
+    } else if (type === "caption") {
+      const cap = await loaders.cap();
+      const out = await cap(data.url);
+      post({ type: "caption", id, text: out[0].generated_text });
+    }
+  } catch (e) {
+    post({ type: "error", id, message: String((e && e.message) || e) });
+  }
+};
+</script>
+
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const log = $("#log"), main = $("#main"), input = $("#input");
+const sendBtn = $("#send"), stopBtn = $("#stop"), micBtn = $("#mic");
+const icon = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+
+// ===== Theme =====
+const themeBtn = $("#theme");
+let theme = null;
+try { theme = localStorage.getItem("theme"); } catch (e) {}
+if (!theme) theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+function applyTheme(t) {
+  theme = t;
+  document.documentElement.dataset.theme = t;
+  themeBtn.innerHTML = icon(t === "dark" ? "sun" : "moon");
+  themeBtn.title = t === "dark" ? "الوضع النهاري" : "الوضع الليلي";
+  try { localStorage.setItem("theme", t); } catch (e) {}
+}
+themeBtn.onclick = () => applyTheme(theme === "dark" ? "light" : "dark");
+applyTheme(theme);
+
+// ===== Capability =====
+const gpu = !!navigator.gpu;
+const mem = navigator.deviceMemory ? navigator.deviceMemory + " GB" + (navigator.deviceMemory >= 8 ? "+" : "") : "غير معروفة";
+$("#caps").innerHTML =
+  `WebGPU: <b>${gpu ? "متاح" : "غير متاح"}</b><br>الذاكرة: <b>${mem}</b><br>أنوية المعالج: <b>${navigator.hardwareConcurrency || "؟"}</b><br>التشغيل: <b>WASM (WebGPU اختياري)</b>`;
+$("#backend").textContent = "WASM";
+
+// ===== Worker =====
+const blob = new Blob([$("#worker-src").textContent], { type: "text/javascript" });
+const blobUrl = URL.createObjectURL(blob);
+let worker = new Worker(blobUrl, { type: "module" });
+function respawnWorker() {
+  const old = worker, w = new Worker(blobUrl, { type: "module" });
+  w.onmessage = old.onmessage; w.onerror = old.onerror;
+  old.terminate(); worker = w;
+}
+
+// ===== State =====
+const SYSTEM = { role: "system", content: "You are a helpful assistant. Answer concisely and in the same language as the user." };
+let busy = false;
+let reqId = 0;
+let pendingImage = "";
+const handlers = {};
+let abortCurrent = null, killTimer = null, stopUI = null;
+let lastHb = Date.now();
+let diagLines = [];
+function onLog(t) {
+  diagLines.push(new Date().toLocaleTimeString("en-GB") + "  " + t);
+  if (diagLines.length > 40) diagLines.shift();
+  $("#diag").textContent = diagLines.join("\n");
+}
+let progressTarget = null;
+
+// ===== Sessions =====
+let sessions = {};
+let currentSessionId = "";
+try {
+  sessions = JSON.parse(localStorage.getItem("chatSessions") || "{}");
+  currentSessionId = localStorage.getItem("currentSessionId") || uid();
+} catch (e) { sessions = {}; currentSessionId = uid(); }
+if (!sessions[currentSessionId]) {
+  sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
+}
+
+function saveSessions() {
+  try {
+    const keys = Object.keys(sessions);
+    if (keys.length > 20) {
+      const keep = new Set([currentSessionId, ...keys.slice(-19)]);
+      for (const k of keys) if (!keep.has(k)) delete sessions[k];
+    }
+    localStorage.setItem("chatSessions", JSON.stringify(sessions));
+    localStorage.setItem("currentSessionId", currentSessionId);
+  } catch (e) {
+    console.warn("Storage full, pruning", e);
+    const keys = Object.keys(sessions);
+    if (keys.length > 1) {
+      delete sessions[keys[0]];
+      try { localStorage.setItem("chatSessions", JSON.stringify(sessions)); } catch (e2) {}
+    }
+  }
+}
+
+function renderHistory() {
+  const list = $("#historyList");
+  list.innerHTML = "";
+  Object.keys(sessions).reverse().forEach(id => {
+    const s = sessions[id];
+    const div = document.createElement("div");
+    div.className = `history-item ${id === currentSessionId ? "active" : ""}`;
+    const title = document.createElement("span");
+    title.className = "title";
+    title.textContent = s.title;
+    const del = document.createElement("button");
+    del.className = "del-btn"; del.title = "حذف"; del.innerHTML = icon("trash");
+    div.append(title, del);
+    div.onclick = (e) => {
+      if (e.target.closest(".del-btn")) {
+        e.stopPropagation();
+        if (confirm("حذف هذه المحادثة؟")) {
+          delete sessions[id];
+          if (currentSessionId === id) {
+            currentSessionId = uid();
+            sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
+          }
+          saveSessions(); renderHistory(); loadSession(currentSessionId);
+        }
+        return;
+      }
+      currentSessionId = id;
+      saveSessions(); renderHistory(); loadSession(id);
+      closeSidebar();
+    };
+    list.appendChild(div);
+  });
+}
+function updateSessionTitle(text) {
+  if (sessions[currentSessionId].title === "دردشة جديدة") {
+    sessions[currentSessionId].title = text.slice(0, 25) + (text.length > 25 ? "..." : "");
+    renderHistory();
+  }
+}
+
+// ===== Model UI =====
+// ✅ استخدام getElementById بدل querySelector (يدعم أي مفاتيح)
+function setModel(key, state, pct) {
+  const el = document.getElementById("m-" + key);
+  if (!el) return;
+  el.className = "model " + (state === "loading" ? "loading" : "");
+  el.querySelector(".dot").className = "dot " + state;
+  if (pct != null) el.querySelector(".bar i").style.width = pct + "%";
+}
+
+// ===== Messages =====
+function addMsg(role, text = "", extraClass = "") {
+  $(".empty")?.remove();
+  const d = document.createElement("div");
+  d.className = `msg ${role} ${extraClass}`;
+  if (text) d.textContent = text;
+  log.appendChild(d);
+  scroll();
+  return d;
+}
+const scroll = () => { main.scrollTop = main.scrollHeight; };
+function typing() {
+  const s = document.createElement("span");
+  s.className = "typing"; s.innerHTML = "<i></i><i></i><i></i>";
+  return s;
+}
+function welcome() {
+  log.innerHTML = '<div class="empty"><h2>مرحباً 👋</h2><p>اكتب رسالتك للبدء. سيُحمَّل النموذج عند أول رسالة.</p></div>';
+}
+
+// ✅ إخفاء بادئة وصف الصورة عند عرض السجل
+function displayContent(m) {
+  let t = m.content;
+  if (m.role === "user" && t.startsWith("[Image description:")) {
+    t = t.replace(/^\[Image description:[^\]]*\]\n?/, "").trim() || "(صورة)";
+  }
+  return t;
+}
+
+function loadSession(id) {
+  log.innerHTML = "";
+  const msgs = sessions[id].messages;
+  if (msgs.length === 0) { welcome(); return; }
+  msgs.forEach(m => {
+    const d = addMsg(m.role, displayContent(m));
+    if (m.role === "assistant") addActions(d, m.content);
+  });
+}
+function setBusy(v) {
+  busy = v;
+  sendBtn.disabled = v;
+  $("#unload").disabled = v; $("#modelSel").disabled = v;
+  stopBtn.style.display = v ? "grid" : "none";
+  sendBtn.style.display = v ? "none" : "grid";
+}
+
+// ===== Worker events =====
+worker.onmessage = ({ data }) => {
+  const { type, key, id } = data;
+  if (type === "loading") setModel(key, "loading", 0);
+  else if (type === "progress") {
+    setModel(key, "loading", data.pct);
+    if (progressTarget) progressTarget.textContent = `جارٍ تحميل النموذج… ${Math.round(data.pct)}%`;
+  } else if (type === "ready") {
+    setModel(key, "ready", 100);
+    if (key === "chat") $("#backend").textContent = data.device === "webgpu" ? "WebGPU" : "WASM";
+  } else if (type === "unloaded") onUnloaded();
+  else if (type === "evicted") setModel(key, "", 0);
+  else if (type === "log") onLog(data.text);
+  else if (type === "hb") lastHb = Date.now();
+  else if (handlers[id]) handlers[id](data);
+  else if (type === "error" && key) setModel(key, "error");
+};
+worker.onerror = (e) => {
+  showError("تعذّر تشغيل المحرّك. تحقق من الاتصال. " + (e.message || ""));
+  setBusy(false);
+};
+function showError(msg) { addMsg("assistant", "⚠️ " + msg, "error"); }
+
+// ===== Chat =====
+function ask(text, regen = false) {
+  if (busy || (!regen && !text.trim())) return;
+  document.querySelectorAll(".regen").forEach((b) => b.remove());
+  setBusy(true);
+  let prompt;
+  if (regen) {
+    const msgs = sessions[currentSessionId].messages;
+    prompt = msgs.length ? msgs[msgs.length - 1].content : "";
+  } else {
+    addMsg("user", text);  // نعرض فقط نص المستخدم
+    prompt = pendingImage ? `[Image description: ${pendingImage}]\n${text}` : text;
+    pendingImage = "";
+    sessions[currentSessionId].messages.push({ role: "user", content: prompt });
+    updateSessionTitle(text);
+    saveSessions();
+  }
+
+  const bubble = addMsg("assistant");
+  const status = document.createElement("span");
+  status.className = "status";
+  status.textContent = "جارٍ التحضير…";
+  bubble.append(status, typing());
+  progressTarget = status;
+  const out = document.createElement("span");
+  let answer = "";
+  const id = ++reqId;
+  let tm = null, t0 = 0;
+
+  const stopWait = () => {
+    clearInterval(tm);
+    status.remove();
+    bubble.querySelector(".typing")?.remove();
+    if (!out.isConnected) bubble.appendChild(out);
+  };
+
+  // ✅ إصلاح: لا نستخدم history.pop() (كان يمسح سجل المتصفح)
+  abortCurrent = () => {
+    stopWait();
+    if (!answer.trim()) {
+      bubble.remove();
+    } else {
+      const last = sessions[currentSessionId].messages.at(-1);
+      if (!last || last.content !== answer) {
+        sessions[currentSessionId].messages.push({ role: "assistant", content: answer });
+        saveSessions();
+      }
+      addActions(bubble, answer);
+    }
+  };
+  stopUI = () => { clearInterval(tm); if (status.isConnected) status.textContent = "جارٍ الإيقاف…"; };
+
+  handlers[id] = (d) => {
+    if (d.type === "start") {
+      progressTarget = null; t0 = Date.now();
+      status.textContent = "جارٍ التوليد…";
+      tm = setInterval(() => {
+        const sec = Math.round((Date.now() - t0) / 1000);
+        const quiet = Math.round((Date.now() - lastHb) / 1000);
+        status.textContent = `جارٍ التوليد… ${sec} ث | ` +
+          (quiet > 3 ? `المحرّك مشغول (${quiet} ث)` : "المحرّك يستجيب") +
+          (sec > 40 ? " — بطيء. جرّب نموذجاً أصغر." : "");
+      }, 1000);
+    }
+    else if (d.type === "token") { if (!out.isConnected) stopWait(); answer += d.text; out.textContent = answer; scroll(); }
+    else if (d.type === "done") {
+      stopWait();
+      if (!answer.trim() && d.text && d.text.trim()) { answer = d.text.trim(); out.textContent = answer; }
+      if (answer.trim()) {
+        sessions[currentSessionId].messages.push({ role: "assistant", content: answer });
+        saveSessions();
+        addActions(bubble, answer);
+      } else { out.textContent = "(لا يوجد رد)"; }
+      finish(id);
+    } else if (d.type === "error") {
+      clearInterval(tm); progressTarget = null; bubble.remove();
+      showError("فشل التحميل أو التوليد (ذاكرة أو اتصال).\n" + d.message);
+      finish(id);
+    }
+  };
+
+  const kind = CHAT_MODELS[modelSel.value].kind;
+  let payload;
+  const cleanHistory = sessions[currentSessionId].messages.filter(m =>
+    m.content && m.content.trim().length > 0 &&
+    !m.content.includes("(لا يوجد رد)") &&
+    !m.content.includes("(تم الإيقاف)") &&
+    !m.content.includes("⚠️")
+  );
+
+  if (kind === "chat") payload = [SYSTEM, ...cleanHistory];
+  else if (kind === "alpaca") payload = "Below is an instruction. Write a response.\n\n### Instruction:\n" + prompt + "\n\n### Response:";
+  else payload = "User: " + prompt + "\nAssistant:";
+
+  worker.postMessage({ type: "chat", id, model: modelSel.value, messages: payload, plain: prompt, gpu: $("#gpuOpt").checked });
+}
+
+function addActions(bubble, text) {
+  const row = document.createElement("div"); row.className = "acts";
+  const copy = document.createElement("button"); copy.title = "نسخ"; copy.innerHTML = icon("copy");
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+    copy.title = "تم النسخ"; copy.classList.add("ok"); setTimeout(() => copy.classList.remove("ok"), 1200);
+  };
+  const re = document.createElement("button"); re.className = "regen"; re.title = "إعادة التوليد"; re.innerHTML = icon("refresh");
+  re.onclick = () => {
+    if (busy) return;
+    const msgs = sessions[currentSessionId].messages;
+    if (msgs.length && msgs[msgs.length - 1].role === "assistant") msgs.pop();
+    saveSessions(); bubble.remove(); ask("", true);
+  };
+  row.append(copy, re); bubble.appendChild(row);
+}
+function finish(id) { delete handlers[id]; abortCurrent = null; stopUI = null; clearTimeout(killTimer); setBusy(false); input.focus(); }
+
+// ===== Audio =====
+async function decodeAudio(arrayBuffer) {
+  const ctx = new AudioContext({ sampleRate: 16000 });
+  const buf = await ctx.decodeAudioData(arrayBuffer);
+  ctx.close();
+  return buf.getChannelData(0);
+}
+function transcribe(arrayBuffer) {
+  if (busy) return;
+  setBusy(true);
+  const note = addMsg("assistant", "");
+  const status = document.createElement("span");
+  status.className = "status"; status.textContent = "جارٍ تفريغ الصوت…";
+  note.append(status, typing());
+  progressTarget = status;
+  const id = ++reqId;
+  decodeAudio(arrayBuffer).then((audio) => {
+    handlers[id] = (d) => {
+      progressTarget = null; note.remove(); delete handlers[id];
+      setBusy(false);
+      if (d.type === "asr" && d.text) ask(d.text);
+      else showError(d.type === "error" ? "فشل تفريغ الصوت: " + d.message : "لم يُكتشف أي كلام.");
+    };
+    worker.postMessage({ type: "asr", id, audio }, [audio.buffer]);
+  }).catch((e) => { note.remove(); setBusy(false); showError("تعذّر قراءة الملف الصوتي: " + e.message); });
+}
+
+// ===== Recording =====
+let rec = null, chunks = [];
+const plusBtn = $("#plus"), pop = $("#pop");
+function closePop() { pop.hidden = true; plusBtn.setAttribute("aria-expanded", "false"); }
+plusBtn.onclick = (e) => {
+  e.stopPropagation();
+  if (rec) { rec.stop(); return; }
+  pop.hidden = !pop.hidden;
+  plusBtn.setAttribute("aria-expanded", String(!pop.hidden));
+};
+pop.addEventListener("click", closePop);
+document.addEventListener("click", (e) => { if (!pop.contains(e.target)) closePop(); });
+micBtn.onclick = async () => {
+  if (busy || rec) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    rec = new MediaRecorder(stream); chunks = [];
+    rec.ondataavailable = (e) => chunks.push(e.data);
+    rec.onstop = async () => {
+      stream.getTracks().forEach((t) => t.stop());
+      plusBtn.classList.remove("rec"); plusBtn.innerHTML = icon("plus"); plusBtn.title = "إرفاق";
+      rec = null;
+      transcribe(await new Blob(chunks).arrayBuffer());
+    };
+    rec.start();
+    plusBtn.classList.add("rec"); plusBtn.innerHTML = icon("stop"); plusBtn.title = "إيقاف التسجيل";
+  } catch (e) { showError("لا يمكن الوصول إلى الميكروفون (يتطلب https أو localhost)."); }
+};
+$("#aud").onclick = () => $("#audFile").click();
+$("#audFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (f) transcribe(await f.arrayBuffer());
+};
+
+// ===== Images =====
+$("#img").onclick = () => $("#imgFile").click();
+$("#imgFile").onchange = (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f || busy) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const url = reader.result;
+    const u = addMsg("user"); const im = new Image(); im.src = url; u.appendChild(im);
+    const note = addMsg("assistant");
+    const status = document.createElement("span");
+    status.className = "status"; status.textContent = "جارٍ توليد وصف للصورة…";
+    note.append(status, typing());
+    progressTarget = status; setBusy(true);
+    const id = ++reqId;
+    handlers[id] = (d) => {
+      progressTarget = null; delete handlers[id]; setBusy(false);
+      if (d.type === "caption") {
+        pendingImage = d.text;
+        note.textContent = "وصف الصورة (بالإنجليزية): " + d.text + "\nاكتب سؤالك عنها.";
+      } else { note.remove(); showError("فشل وصف الصورة: " + d.message); }
+    };
+    worker.postMessage({ type: "caption", id, url });
+  };
+  reader.readAsDataURL(f);
+};
+
+// ===== Input =====
+function submit() { const t = input.value.trim(); if (!t) return; input.value = ""; fit(); ask(t); }
+sendBtn.onclick = submit;
+stopBtn.onclick = () => {
+  if (stopUI) stopUI();
+  worker.postMessage({ type: "stop" });
+  clearTimeout(killTimer);
+  killTimer = setTimeout(() => { if (busy) hardReset(); }, 1500);
+};
+function hardReset() {
+  if (abortCurrent) abortCurrent();
+  abortCurrent = null;
+  for (const k of Object.keys(handlers)) delete handlers[k];
+  progressTarget = null;
+  respawnWorker();
+  ["chat", "asr", "cap"].forEach((k) => setModel(k, "", 0));
+  setBusy(false);
+  addMsg("assistant", "أُعيد تشغيل المحرّك. سيُعاد تحميل النموذج عند الرسالة التالية.");
+}
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
+});
+const fit = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; };
+input.addEventListener("input", fit);
+
+// ===== Models list =====
+// ✅ قائمة نظيفة: نماذج ONNX حقيقية بمفاتيح بسيطة بدون "/"
+const CHAT_MODELS = {
+  qwen:      { name: "Xenova/Qwen1.5-0.5B-Chat",             kind: "chat",   size: "~500MB", group: "💬 دردشة (تتذكر السياق)" },
+  qwen25:    { name: "onnx-community/Qwen2.5-0.5B-Instruct", kind: "chat",   size: "~500MB", group: "💬 دردشة (تتذكر السياق)" },
+  qwen3:     { name: "onnx-community/Qwen3-0.6B-ONNX",       kind: "chat",   size: "~600MB", group: "💬 دردشة (تتذكر السياق)" },
+  lfm2:      { name: "onnx-community/LFM2-350M-ONNX",        kind: "chat",   size: "~350MB", group: "💬 دردشة (تتذكر السياق)" },
+  smol360:   { name: "onnx-community/SmolLM2-360M-Instruct", kind: "chat",   size: "~360MB", group: "💬 دردشة (تتذكر السياق)" },
+  smol135:   { name: "onnx-community/SmolLM2-135M-Instruct", kind: "chat",   size: "~140MB", group: "💬 دردشة (تتذكر السياق)" },
+  lamini:    { name: "Xenova/LaMini-Flan-T5-77M",            kind: "t5",     size: "~80MB",  group: "⚡ سريعة (سؤال وجواب)" },
+  lamini248: { name: "Xenova/LaMini-Flan-T5-248M",           kind: "t5",     size: "~250MB", group: "⚡ سريعة (سؤال وجواب)" },
+  flansmall: { name: "Xenova/flan-t5-small",                 kind: "t5",     size: "~60MB",  group: "⚡ سريعة (سؤال وجواب)" },
+  flanbase:  { name: "Xenova/flan-t5-base",                  kind: "t5",     size: "~250MB", group: "⚡ سريعة (سؤال وجواب)" },
+  t5small:   { name: "Xenova/t5-small",                      kind: "t5",     size: "~60MB",  group: "⚡ سريعة (سؤال وجواب)" },
+  distilgpt2:{ name: "Xenova/distilgpt2",                    kind: "alpaca", size: "~82MB",  group: "🐣 صغيرة جداً (إكمال نص)" },
+  gpt2:      { name: "Xenova/gpt2",                          kind: "alpaca", size: "~125MB", group: "🐣 صغيرة جداً (إكمال نص)" },
+  opt125:    { name: "Xenova/opt-125m",                      kind: "alpaca", size: "~130MB", group: "🐣 صغيرة جداً (إكمال نص)" },
+  lgpt:      { name: "Xenova/LaMini-GPT-124M",               kind: "alpaca", size: "~125MB", group: "🐣 صغيرة جداً (إكمال نص)" },
+};
+const modelSel = $("#modelSel");
+const groups = {};
+for (const [k, m] of Object.entries(CHAT_MODELS)) {
+  if (!groups[m.group]) { groups[m.group] = document.createElement("optgroup"); groups[m.group].label = m.group; modelSel.appendChild(groups[m.group]); }
+  const o = document.createElement("option");
+  o.value = k; o.textContent = `${m.name} (${m.size})`;
+  groups[m.group].appendChild(o);
+}
+modelSel.value = "qwen25";
+let curModel = modelSel.value;
+function syncModelUI() {
+  const m = CHAT_MODELS[curModel];
+  $("#m-chat small").textContent = m.name;
+  $("#modelNote").textContent = (m.kind === "chat"
+    ? "يتذكر آخر الرسائل. أول تحميل ينزّل الحجم المذكور. "
+    : "يجيب على كل سؤال مستقلاً. صغير وسريع. ")
+    + (m.name.includes("Qwen") ? "Qwen هو الأفضل للعربية." : "للعربية يُفضَّل Qwen. هذا مناسب للإنجليزية.");
+}
+if (!gpu) { $("#gpuOpt").disabled = true; }
+$("#gpuOpt").onchange = () => setModel("chat", "", 0);
+modelSel.onchange = () => {
+  if (sessions[currentSessionId].messages.length && !confirm("تغيير النموذج سيمسح المحادثة الحالية. متابعة؟")) { modelSel.value = curModel; return; }
+  curModel = modelSel.value;
+  sessions[currentSessionId].messages = []; pendingImage = ""; saveSessions(); loadSession(currentSessionId);
+  setModel("chat", "", 0);
+  syncModelUI();
+};
+syncModelUI();
+$("#unload").onclick = () => { if (!busy) worker.postMessage({ type: "unload" }); };
+function onUnloaded() {
+  ["chat", "asr", "cap"].forEach((k) => setModel(k, "", 0));
+  $("#backend").textContent = "WASM";
+  addMsg("assistant", "تم تفريغ النماذج من الذاكرة. سيُعاد تحميل النموذج عند الرسالة التالية.");
+}
+
+// ===== Header / sidebar =====
+$("#clear").onclick = () => {
+  if (busy) worker.postMessage({ type: "stop" });
+  sessions[currentSessionId].messages = [];
+  sessions[currentSessionId].title = "دردشة جديدة";
+  pendingImage = "";
+  saveSessions(); renderHistory(); loadSession(currentSessionId);
+};
+$("#newChatBtn").onclick = () => {
+  currentSessionId = uid();
+  sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
+  saveSessions(); renderHistory(); loadSession(currentSessionId);
+  closeSidebar();
+};
+$("#noteX").onclick = () => $("#note").remove();
+
+// ✅ Mobile sidebar with overlay
+function openSidebar() { $("#side").classList.add("open"); $("#overlay").classList.add("show"); }
+function closeSidebar() { $("#side").classList.remove("open"); $("#overlay").classList.remove("show"); }
+$("#menu").onclick = () => {
+  $("#side").classList.contains("open") ? closeSidebar() : openSidebar();
+};
+$("#overlay").onclick = closeSidebar;
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSidebar(); });
+
+// ✅ زر قراءة الرد بصوت (Web Speech API)
+const speakBtn = $("#speak");
+speakBtn.onclick = () => {
+  if (!('speechSynthesis' in window)) { showError("المتصفح لا يدعم تحويل النص إلى كلام."); return; }
+  window.speechSynthesis.cancel();
+  const msgs = sessions[currentSessionId]?.messages;
+  const lastAssistant = msgs?.filter(m => m.role === "assistant").pop();
+  if (!lastAssistant || !lastAssistant.content) { showError("لا يوجد رد لقراءته."); return; }
+  const utter = new SpeechSynthesisUtterance(lastAssistant.content);
+  utter.lang = /[\u0600-\u06FF]/.test(lastAssistant.content) ? "ar" : "en";
+  utter.onend = () => speakBtn.classList.remove("ok");
+  window.speechSynthesis.speak(utter);
+  speakBtn.classList.add("ok");
+};
+
+setBusy(false);
+renderHistory();
+loadSession(currentSessionId);
+input.focus();
+</script>
+</body>
+</html>
