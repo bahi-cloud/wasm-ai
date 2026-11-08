@@ -2,6 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>دردشة محلية بالذكاء الاصطناعي</title>
 <style>
@@ -69,6 +71,11 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
 .pop button{display:flex;align-items:center;gap:10px;width:100%;padding:12px;border-radius:8px;font-size:14px;text-align:start}
 .pop button:hover{background:var(--ai)}
 #scrim{display:none}
+.msg pre{white-space:pre;overflow:auto;direction:ltr;text-align:left;background:#0004;padding:8px 10px;border-radius:8px;margin:6px 0;font-size:13px}
+.msg code{direction:ltr;unicode-bidi:embed;background:#0003;padding:1px 5px;border-radius:4px;font-size:.92em}
+.msg pre code{background:none;padding:0}
+.msg h4{display:inline;font-size:1em}
+.acts small{color:var(--muted);align-self:center;font-size:11px;margin-inline-start:6px}
 @media (max-width:800px){
   body{grid-template-columns:1fr;grid-template-areas:"head" "note" "main" "foot"}
   aside{position:fixed;inset:0 0 0 auto;width:300px;max-width:88vw;z-index:20;transform:translateX(100%);transition:transform .25s;padding-top:calc(16px + env(safe-area-inset-top,0px))}
@@ -102,6 +109,8 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
   <section>
     <h2>المحادثات</h2>
     <button class="ghost wide" id="newChatBtn"><svg class="i"><use href="#i-plus"/></svg>محادثة جديدة</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px"><button class="ghost" id="exp" style="flex:1;justify-content:center">تصدير</button><button class="ghost" id="imp" style="flex:1;justify-content:center">استيراد</button></div>
+    <input type="file" id="impFile" accept=".json,application/json" hidden>
     <div id="historyList" style="max-height:190px;overflow-y:auto"></div>
   </section>
   <section>
@@ -119,6 +128,18 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
     <button class="ghost wide" id="delVis" hidden><svg class="i"><use href="#i-trash"/></svg>حذف نموذج الصور المضاف</button>
   </section>
   <section>
+    <h2>الصوت</h2>
+    <select id="asrSel" dir="ltr" aria-label="نموذج الصوت"><option value="Xenova/whisper-tiny">whisper-tiny (متعدد اللغات)</option><option value="Xenova/whisper-base">whisper-base (أدق، أبطأ)</option><option value="Xenova/whisper-tiny.en">whisper-tiny.en (إنجليزي)</option></select>
+    <select id="asrLang" aria-label="لغة الكلام"><option value="arabic">العربية</option><option value="english">الإنجليزية</option><option value="">تلقائي</option></select>
+  </section>
+  <section>
+    <h2>مستنداتي (أسئلة عن ملفاتك)</h2>
+    <p class="sub">أضف ملفات نصية (txt, md, csv, json). يبحث التطبيق فيها محلياً ويعطي النموذج المقاطع الأقرب لسؤالك.</p>
+    <div id="docList"></div>
+    <button class="ghost wide" id="addDoc"><svg class="i"><use href="#i-plus"/></svg>إضافة ملف</button>
+    <input type="file" id="docFile" accept=".txt,.md,.csv,.json,.html,text/*" multiple hidden>
+  </section>
+  <section>
     <h2>إضافة نموذج من Hugging Face</h2>
     <input class="txt" id="hfId" placeholder="owner/model-name" autocapitalize="off" autocomplete="off" spellcheck="false">
     <select id="hfType" aria-label="نوع النموذج">
@@ -126,6 +147,7 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
         <option value="chat">دردشة (قالب رسائل)</option>
         <option value="t5">T5 / Flan (سؤال وجواب)</option>
         <option value="plain">نموذج نصي عادي (GPT-2…)</option>
+        <option value="webllm">WebLLM (WebGPU): معرّف نموذج MLC</option>
       </optgroup>
       <optgroup label="صور">
         <option value="v:image-to-text">وصف الصور / OCR</option>
@@ -142,6 +164,7 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
     <div class="model" id="m-chat"><b><span class="dot"></span>الدردشة</b><small></small><div class="bar"><i></i></div></div>
     <div class="model" id="m-asr"><b><span class="dot"></span>تحويل الصوت إلى نص</b><small>Xenova/whisper-tiny.en</small><div class="bar"><i></i></div></div>
     <div class="model" id="m-cap"><b><span class="dot"></span>الصور</b><small></small><div class="bar"><i></i></div></div>
+    <div class="model" id="m-emb"><b><span class="dot"></span>البحث في المستندات</b><small>Xenova/multilingual-e5-small</small><div class="bar"><i></i></div></div>
   </section>
   <section>
     <h2>قدرات جهازك</h2>
@@ -177,7 +200,7 @@ textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;font-siz
     <button class="ic" id="stop" title="إيقاف" aria-label="إيقاف"><svg class="i"><use href="#i-stop"/></svg></button>
     <button class="ic" id="send" title="إرسال" aria-label="إرسال"><svg class="i"><use href="#i-send"/></svg></button>
   </div>
-  <p class="hint">النماذج الصغيرة قد تخطئ، وأداؤها بالإنجليزية أفضل. تفريغ الصوت يدعم الإنجليزية فقط.</p>
+  <p class="hint">النماذج الصغيرة قد تخطئ، وأداؤها بالإنجليزية أفضل.</p>
   <input type="file" id="imgFile" accept="image/*" hidden>
   <input type="file" id="audFile" accept="audio/*" hidden>
 </footer>
@@ -206,7 +229,8 @@ async function dispose(k) {
 }
 async function get(key, task, model, optSets) {
   const sig = task + "|" + model + "|" + JSON.stringify(optSets);
-  for (const k of Object.keys(cache)) if (k !== key || cache[k].sig !== sig) await dispose(k);
+  const pair = (a, b) => a === b || (a === "chat" && b === "emb") || (a === "emb" && b === "chat");
+  for (const k of Object.keys(cache)) if (!pair(k, key) || (k === key && cache[k].sig !== sig)) await dispose(k);
   if (cache[key]) return cache[key].p;
   const files = {}; let lastPost = 0;
   const cb = (p) => {
@@ -262,14 +286,24 @@ function fmt(task, out) {
 self.onmessage = async ({ data }) => {
   const { type, id } = data;
   if (type === "stop") { if (stopper) stopper.interrupt(); return; }
-  if (type === "unload") { for (const k of Object.keys(cache)) await dispose(k); post({ type: "unloaded" }); return; }
+  if (type === "unload") { for (const k of Object.keys(cache)) await dispose(k); post({ type: "unloaded", silent: data.silent }); return; }
   if (!READY) { post({ type: "error", id, message: "تعذّر تحميل مكتبة Transformers.js. تحقق من الإنترنت أو من حظر cdn.jsdelivr.net. " + importErr }); return; }
   try {
     if (type === "chat") await chat(data, id);
     else if (type === "asr") {
-      const asr = await get("asr", "automatic-speech-recognition", "Xenova/whisper-tiny.en", [{ device: "wasm" }]);
-      const out = await asr(data.audio, { chunk_length_s: 30 });
+      const asr = await get("asr", "automatic-speech-recognition", data.name, [{ device: "wasm" }]);
+      const ao = { chunk_length_s: 30 };
+      if (!data.name.endsWith(".en")) { ao.task = "transcribe"; if (data.lang) ao.language = data.lang; }
+      const out = await asr(data.audio, ao);
       post({ type: "asr", id, text: (out.text || "").trim() });
+    } else if (type === "embed") {
+      const ep = await get("emb", "feature-extraction", "Xenova/multilingual-e5-small", [{ device: "wasm" }]);
+      const vecs = [];
+      for (let i = 0; i < data.texts.length; i += 8) {
+        const o = await ep(data.texts.slice(i, i + 8), { pooling: "mean", normalize: true });
+        vecs.push(...o.tolist()); post({ type: "eprog", id, n: Math.min(i + 8, data.texts.length) });
+      }
+      post({ type: "embed", id, vecs });
     } else if (type === "caption") {
       const p = await get("cap", data.task, data.name, [{ device: "wasm" }]);
       const out = await p(data.url, data.task === "object-detection" ? { threshold: 0.5 } : {});
@@ -313,7 +347,7 @@ function respawnWorker() { const old = worker, w = new Worker(blobUrl, { type: "
 
 /* ===== Models: built-in + user-added from Hugging Face ===== */
 const DT = { chat: ["q4", "q8"], t5: ["q8", "fp32"], plain: ["q8", "fp32"], alpaca: ["q8", "fp32"] };
-const G1 = "دردشة (تتذكر السياق)", G2 = "سريعة (سؤال وجواب)", G3 = "نماذجي المضافة";
+const G1 = "دردشة (تتذكر السياق)", G2 = "سريعة (سؤال وجواب)", G3 = "نماذجي المضافة", G4 = "WebGPU سريع (WebLLM)";
 const T = (name, kind, size, group) => ({ name, kind, size, group });
 const BUILTIN = {
   qwen:      T("Xenova/Qwen1.5-0.5B-Chat", "chat", "~500MB", G1),
@@ -330,6 +364,11 @@ const BUILTIN = {
   lgpt:      T("Xenova/LaMini-GPT-124M", "alpaca", "~125MB", G2),
   distilgpt2:T("Xenova/distilgpt2", "plain", "~90MB", G2),
   gpt2:      T("Xenova/gpt2", "plain", "~125MB", G2),
+  w_smol:    T("SmolLM2-360M-Instruct-q4f16_1-MLC", "webllm", "~250MB", G4),
+  w_q05:     T("Qwen2.5-0.5B-Instruct-q4f16_1-MLC", "webllm", "~350MB", G4),
+  w_l1:      T("Llama-3.2-1B-Instruct-q4f16_1-MLC", "webllm", "~700MB", G4),
+  w_q15:     T("Qwen2.5-1.5B-Instruct-q4f16_1-MLC", "webllm", "~1GB", G4),
+  w_g2:      T("gemma-2-2b-it-q4f16_1-MLC", "webllm", "~1.4GB", G4),
 };
 const V = (name, task, label, size) => ({ name, task, label, size });
 const VIS0 = {
@@ -345,7 +384,8 @@ const modelSel = $("#modelSel"), visSel = $("#visSel");
 function rebuild() {
   const cur = modelSel.value, curV = visSel.value;
   for (const o of [CHAT_MODELS, VIS_MODELS]) for (const k in o) delete o[k];
-  Object.assign(CHAT_MODELS, BUILTIN); Object.assign(VIS_MODELS, VIS0);
+  for (const [k, m] of Object.entries(BUILTIN)) if (gpu || m.kind !== "webllm") CHAT_MODELS[k] = m;
+  Object.assign(VIS_MODELS, VIS0);
   for (const c of custom) {
     if (c.task) VIS_MODELS["c:" + c.name] = { name: c.name, task: c.task, label: c.name.split("/").pop(), size: "مخصص", custom: true };
     else CHAT_MODELS["c:" + c.name] = { name: c.name, kind: c.kind, size: "مخصص", group: G3, custom: true };
@@ -368,7 +408,7 @@ let curModel = modelSel.value;
 function syncModelUI() {
   const m = CHAT_MODELS[curModel];
   $("#m-chat small").textContent = m.name;
-  let n = m.kind === "chat" ? "يتذكر آخر الرسائل. " : "يجيب على كل سؤال بشكل مستقل. ";
+  let n = m.kind === "webllm" ? "يعمل بمحرك WebLLM على WebGPU، وهو أسرع بكثير ويتحمل نماذج أكبر. " : m.kind === "chat" ? "يتذكر آخر الرسائل. " : "يجيب على كل سؤال بشكل مستقل. ";
   n += /Qwen|Gemma|LFM2/i.test(m.name) ? "مناسب نسبياً للعربية." : "الأفضل للإنجليزية.";
   $("#modelNote").textContent = n;
   $("#delModel").hidden = !m.custom;
@@ -386,10 +426,17 @@ modelSel.onchange = () => {
 };
 $("#gpuOpt").onchange = () => setModel("chat", "", 0);
 function saveCustom() { store.set("customModels", JSON.stringify(custom)); }
-$("#hfAdd").onclick = () => {
+$("#hfAdd").onclick = async () => {
   const id = $("#hfId").value.trim().replace(/^https?:\/\/huggingface\.co\//, "").replace(/\/+$/, "");
-  if (!/^[\w.-]+\/[\w.-]+$/.test(id)) { alert("صيغة غير صحيحة. مثال: onnx-community/Qwen2.5-0.5B-Instruct"); return; }
-  const t = $("#hfType").value, vis = t.startsWith("v:");
+  const t = $("#hfType").value, vis = t.startsWith("v:"), wl_ = t === "webllm";
+  if (!(wl_ ? /^[\w.-]+$/ : /^[\w.-]+\/[\w.-]+$/).test(id)) { alert(wl_ ? "أدخل معرّف نموذج WebLLM، مثل Qwen2.5-1.5B-Instruct-q4f16_1-MLC" : "صيغة غير صحيحة. مثال: onnx-community/Qwen2.5-0.5B-Instruct"); return; }
+  if (!wl_) {
+    try {
+      const r = await fetch("https://huggingface.co/api/models/" + id);
+      if (r.status === 404) { alert("المستودع غير موجود على Hugging Face."); return; }
+      if (r.ok) { const j = await r.json(); if (!(j.siblings || []).some((f) => /^onnx\//.test(f.rfilename)) && !confirm("لا أرى ملفات ONNX في هذا المستودع، وقد لا يعمل مع Transformers.js. هل تريد إضافته؟")) return; }
+    } catch (e) {}
+  }
   if (custom.some((c) => c.name === id && !!c.task === vis)) { alert("هذا النموذج مضاف مسبقاً."); return; }
   custom.push(vis ? { name: id, task: t.slice(2) } : { name: id, kind: t });
   saveCustom(); rebuild(); $("#hfId").value = "";
@@ -407,16 +454,21 @@ $("#delVis").onclick = () => {
   if (!v || !v.custom || !confirm("حذف هذا النموذج من القائمة؟")) return;
   custom = custom.filter((c) => !c.task || c.name !== v.name); saveCustom(); rebuild(); syncVis();
 };
-$("#unload").onclick = () => { if (!busy) worker.postMessage({ type: "unload" }); };
+$("#unload").onclick = async () => { if (busy) return; await wlUnload(); worker.postMessage({ type: "unload" }); };
 
 /* ===== State & sessions ===== */
 const SYSTEM = { role: "system", content: "You are a helpful assistant. Answer concisely and in the same language as the user." };
 let busy = false, reqId = 0, pendingImage = "", progressTarget = null, abortCurrent = null, killTimer = null, stopUI = null;
 const handlers = {};
-let sessions = {}; try { sessions = JSON.parse(store.get("chatSessions", "{}")); } catch (e) {}
-let currentSessionId = store.get("currentSessionId", "") || crypto.randomUUID();
-if (!sessions[currentSessionId]) sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
-function saveSessions() { store.set("chatSessions", JSON.stringify(sessions)); store.set("currentSessionId", currentSessionId); }
+const db = await new Promise((res) => { try { const r = indexedDB.open("localchat", 1); r.onupgradeneeded = () => r.result.createObjectStore("kv"); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch (e) { res(null); } });
+const kvGet = (k) => new Promise((res) => { if (!db) return res(null); try { const q = db.transaction("kv").objectStore("kv").get(k); q.onsuccess = () => res(q.result ?? null); q.onerror = () => res(null); } catch (e) { res(null); } });
+const kvSet = (k, v) => { if (!db) return; try { db.transaction("kv", "readwrite").objectStore("kv").put(v, k); } catch (e) {} };
+let sessions = await kvGet("sessions");
+if (!sessions) { try { sessions = JSON.parse(store.get("chatSessions", "{}")); } catch (e) { sessions = {}; } }
+let docs = (await kvGet("docs")) || [];
+let currentSessionId = store.get("currentSessionId", "");
+if (!sessions[currentSessionId]) { currentSessionId = crypto.randomUUID(); sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] }; }
+function saveSessions() { kvSet("sessions", sessions); if (!db) store.set("chatSessions", JSON.stringify(sessions)); store.set("currentSessionId", currentSessionId); }
 const closeSide = () => $("#side").classList.remove("open");
 function renderHistory() {
   const list = $("#historyList"); list.innerHTML = "";
@@ -460,7 +512,7 @@ function loadSession(id) {
   log.innerHTML = "";
   const msgs = sessions[id].messages;
   if (!msgs.length) { log.innerHTML = '<div class="empty"><h2>مرحباً 👋</h2><p>اكتب رسالتك للبدء. سيُحمَّل النموذج عند أول رسالة.</p></div>'; return; }
-  msgs.forEach((m) => { const d = addMsg(m.role, m.content); if (m.role === "assistant") addActions(d, m.content); });
+  msgs.forEach((m) => { const d = addMsg(m.role, m.role === "user" ? m.content : ""); if (m.role === "assistant") { d.innerHTML = md(m.content); addActions(d, m.content); } });
 }
 function setBusy(v) {
   busy = v; sendBtn.disabled = v; $("#unload").disabled = v; modelSel.disabled = v;
@@ -473,14 +525,94 @@ worker.onmessage = ({ data }) => {
   if (type === "loading") setModel(key, "loading", 0);
   else if (type === "progress") { setModel(key, "loading", data.pct); if (progressTarget) progressTarget.textContent = `جارٍ تحميل النموذج… ${Math.round(data.pct)}%`; }
   else if (type === "ready") { setModel(key, "ready", 100); if (key === "chat") $("#backend").textContent = data.device === "webgpu" ? "WebGPU" : "WASM"; }
-  else if (type === "unloaded") onUnloaded();
+  else if (type === "unloaded") { if (!data.silent) onUnloaded(); }
   else if (type === "evicted") setModel(key, "", 0);
   else if (handlers[id]) handlers[id](data);
 };
 worker.onerror = (e) => { showError("تعذّر تشغيل العامل (Worker). جرّب متصفحاً حديثاً أو خادماً محلياً. " + (e.message || "")); setBusy(false); };
 
+/* ===== Markdown (safe: escape first) ===== */
+const esc = (s) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const THINK = /<think>[\s\S]*?(<\/think>|$)/g;
+function md(s) {
+  return esc(s.replace(THINK, "").trim()).split(/```/).map((p, i) => i % 2
+    ? `<pre><code>${p.replace(/^\w*\n/, "")}</code></pre>`
+    : p.replace(/`([^`\n]+)`/g, "<code>$1</code>").replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/^#{1,4} (.+)$/gm, "<h4>$1</h4>")).join("");
+}
+/* Keep only the latest messages that fit the budget (small models slow down and break on long prompts) */
+function trimCtx(msgs, max) {
+  const out = []; let n = 0;
+  for (let i = msgs.length - 1; i >= 0; i--) { n += msgs[i].content.length; if (n > max && out.length) break; out.unshift(msgs[i]); }
+  while (out.length > 1 && out[0].role !== "user") out.shift();
+  return out;
+}
+
+/* ===== WebLLM engine (main thread, WebGPU) ===== */
+let wl = null;
+async function wlUnload() { if (wl) { try { await wl.engine.unload(); } catch (e) {} wl = null; setModel("chat", "", 0); } }
+async function wlEnsure(id, onProg) {
+  if (wl && wl.id === id) return wl.engine;
+  await wlUnload();
+  worker.postMessage({ type: "unload", silent: true });
+  const lib = await import("https://esm.run/@mlc-ai/web-llm");
+  setModel("chat", "loading", 0);
+  const engine = await lib.CreateMLCEngine(id, { initProgressCallback: (r) => { setModel("chat", "loading", r.progress * 100); onProg(r.progress * 100); } });
+  wl = { engine, id }; setModel("chat", "ready", 100); $("#backend").textContent = "WebGPU";
+  return engine;
+}
+
+/* ===== Retrieval over the user's documents (local embeddings) ===== */
+function embed(texts, onProg) {
+  return new Promise((res, rej) => {
+    const id = ++reqId;
+    handlers[id] = (d) => {
+      if (d.type === "eprog") { if (onProg) onProg(d.n, texts.length); return; }
+      delete handlers[id];
+      if (d.type === "embed") res(d.vecs); else rej(new Error(d.message || "embed"));
+    };
+    worker.postMessage({ type: "embed", id, texts });
+  });
+}
+async function retrieve(q) {
+  const [qv] = await embed(["query: " + q]);
+  const hits = [];
+  for (const d of docs) for (const c of d.chunks) hits.push({ t: c.t, n: d.name, s: c.v.reduce((a, x, i) => a + x * qv[i], 0) });
+  hits.sort((a, b) => b.s - a.s);
+  return hits.slice(0, 3).map((h) => `[${h.n}] ${h.t}`).join("\n---\n");
+}
+function renderDocs() {
+  const l = $("#docList"); l.innerHTML = "";
+  docs.forEach((d, i) => {
+    const r = document.createElement("div"); r.className = "hi";
+    r.innerHTML = `<span></span><button aria-label="حذف">${icon("trash")}</button>`;
+    r.firstChild.textContent = `${d.name} (${d.chunks.length})`;
+    r.querySelector("button").onclick = () => { docs.splice(i, 1); kvSet("docs", docs); renderDocs(); };
+    l.appendChild(r);
+  });
+}
+$("#addDoc").onclick = () => $("#docFile").click();
+$("#docFile").onchange = async (e) => {
+  const files = [...e.target.files]; e.target.value = "";
+  if (busy || !files.length) return;
+  setBusy(true);
+  const note = addMsg("assistant", "جارٍ تجهيز البحث في المستندات…");
+  progressTarget = note;
+  try {
+    for (const f of files) {
+      const text = (await f.text()).replace(/\r/g, ""), parts = [];
+      for (let i = 0; i < text.length && parts.length < 400; i += 500) parts.push(text.slice(i, i + 700));
+      if (!parts.length) continue;
+      const vecs = await embed(parts.map((t) => "passage: " + t), (n, tot) => { progressTarget = null; note.textContent = `فهرسة ${f.name}: ${n}/${tot}`; });
+      docs.push({ name: f.name, chunks: parts.map((t, i) => ({ t, v: vecs[i] })) });
+      kvSet("docs", docs); renderDocs();
+    }
+    note.textContent = "تمت إضافة المستندات. سيُستخدم محتواها تلقائياً عند الإجابة عن أسئلتك.";
+  } catch (err) { note.remove(); showError("فشلت فهرسة الملف: " + err.message); }
+  progressTarget = null; setBusy(false);
+};
+
 /* ===== Chat ===== */
-function ask(text, regen = false) {
+async function ask(text, regen = false) {
   if (busy || (!regen && !text.trim())) return;
   document.querySelectorAll(".regen").forEach((b) => b.remove());
   setBusy(true);
@@ -497,36 +629,71 @@ function ask(text, regen = false) {
   bubble.append(status, typing());
   progressTarget = status;
   const out = document.createElement("span");
-  let answer = "", tm = null, t0 = 0;
+  let answer = "", tm = null, t0 = 0, raf = 0, nTok = 0, tFirst = 0;
   const id = ++reqId;
   const stopWait = () => { clearInterval(tm); status.remove(); bubble.querySelector(".typing")?.remove(); if (!out.isConnected) bubble.appendChild(out); };
   abortCurrent = () => { stopWait(); if (!answer.trim()) { out.textContent = "(تم الإيقاف)"; msgs.pop(); saveSessions(); } };
   stopUI = () => { clearInterval(tm); if (status.isConnected) status.textContent = "جارٍ الإيقاف…"; };
-  handlers[id] = (d) => {
-    if (d.type === "start") {
+  const cb = {
+    start() {
       progressTarget = null; t0 = Date.now(); status.textContent = "جارٍ التوليد…";
       tm = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); status.textContent = `جارٍ التوليد… ${s} ث` + (s > 40 ? " — بطيء على جهازك، جرّب نموذجاً أصغر." : ""); }, 1000);
-    } else if (d.type === "token") { if (!out.isConnected) stopWait(); answer += d.text; out.textContent = answer; scroll(); }
-    else if (d.type === "done") {
-      stopWait();
-      if (!answer.trim() && d.text) { answer = d.text; out.textContent = answer; }
-      if (answer.trim()) { msgs.push({ role: "assistant", content: answer }); saveSessions(); addActions(bubble, answer); }
-      else out.textContent = "(لا يوجد رد)";
+    },
+    token(t) {
+      if (!out.isConnected) stopWait();
+      if (!tFirst) tFirst = Date.now();
+      nTok++; answer += t;
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; out.innerHTML = md(answer); scroll(); });
+    },
+    done(t) {
+      cancelAnimationFrame(raf); stopWait();
+      if (!answer.trim() && t) answer = t;
+      const clean = answer.replace(THINK, "").trim();
+      if (clean) {
+        out.innerHTML = md(answer);
+        msgs.push({ role: "assistant", content: clean }); saveSessions();
+        addActions(bubble, clean, nTok > 1 && tFirst ? nTok / Math.max(0.3, (Date.now() - tFirst) / 1000) : 0);
+      } else out.textContent = "(لا يوجد رد)";
       finish(id);
-    } else if (d.type === "error") {
-      clearInterval(tm); progressTarget = null; bubble.remove();
-      showError("فشل تحميل النموذج أو التوليد (قد تكون الذاكرة غير كافية، أو النموذج غير متوافق، أو لا يوجد اتصال).\n" + d.message);
+    },
+    error(m) {
+      clearInterval(tm); cancelAnimationFrame(raf); progressTarget = null; bubble.remove();
+      showError("فشل تحميل النموذج أو التوليد (قد تكون الذاكرة غير كافية، أو النموذج غير متوافق، أو لا يوجد اتصال).\n" + m);
       setModel("chat", "error", 0); finish(id);
-    }
+    },
   };
-  const cm = CHAT_MODELS[curModel], kind = cm.kind;
-  const history = msgs.filter((m) => m.content && m.content.trim());
-  const payload = kind === "chat" ? [SYSTEM, ...history]
-    : kind === "alpaca" ? "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n" + prompt + "\n\n### Response:"
-    : "User: " + prompt + "\nAssistant:";
-  worker.postMessage({ type: "chat", id, messages: payload, gpu: $("#gpuOpt").checked, input: payload, def: { name: cm.name, kind, dtypes: DT[kind] || DT.plain } });
+  handlers[id] = (d) => { if (d.type === "start") cb.start(); else if (d.type === "token") cb.token(d.text); else if (d.type === "done") cb.done(d.text); else if (d.type === "error") cb.error(d.message); };
+  const cm = CHAT_MODELS[curModel], kind = cm.kind, chatLike = kind === "chat" || kind === "webllm";
+  try {
+    let ctx = "";
+    if (docs.length) {
+      status.textContent = "جارٍ البحث في مستنداتك…";
+      ctx = await retrieve(prompt);
+      if (!busy) return;
+      if (!chatLike) ctx = ctx.slice(0, 1000);
+      status.textContent = "جارٍ التحضير…";
+    }
+    const withCtx = (c) => ctx ? `Use these excerpts from the user's documents when relevant.\n\n${ctx}\n\nQuestion: ${c}` : c;
+    const hist = trimCtx(msgs.filter((m) => m.content && m.content.trim()), kind === "webllm" ? 12000 : 6000)
+      .map((m, i, a) => (i === a.length - 1 && ctx ? { ...m, content: withCtx(m.content) } : m));
+    const payload = chatLike ? [SYSTEM, ...hist]
+      : kind === "alpaca" ? "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n" + withCtx(prompt) + "\n\n### Response:"
+      : "User: " + withCtx(prompt) + "\nAssistant:";
+    if (kind === "webllm") {
+      if (!gpu) throw new Error("WebGPU غير متاح في هذا المتصفح.");
+      const engine = await wlEnsure(cm.name, (p) => { status.textContent = `جارٍ تحميل النموذج… ${Math.round(p)}%`; });
+      if (!busy) return;
+      cb.start();
+      const stream = await engine.chat.completions.create({ messages: payload, stream: true, temperature: 0.7, max_tokens: 512 });
+      for await (const ch of stream) { const t = ch.choices[0] && ch.choices[0].delta && ch.choices[0].delta.content; if (t) cb.token(t); }
+      cb.done("");
+    } else {
+      await wlUnload();
+      worker.postMessage({ type: "chat", id, messages: payload, gpu: $("#gpuOpt").checked, input: payload, def: { name: cm.name, kind, dtypes: DT[kind] || DT.plain } });
+    }
+  } catch (e) { cb.error(String((e && e.message) || e)); }
 }
-function addActions(bubble, text) {
+function addActions(bubble, text, speed = 0) {
   const row = document.createElement("div"); row.className = "acts";
   const copy = document.createElement("button"); copy.title = "نسخ"; copy.innerHTML = icon("copy");
   copy.onclick = async () => {
@@ -541,7 +708,9 @@ function addActions(bubble, text) {
     if (m.length && m[m.length - 1].role === "assistant") { m.pop(); saveSessions(); }
     bubble.remove(); ask("", true);
   };
-  row.append(copy, re); bubble.appendChild(row);
+  row.append(copy, re);
+  if (speed) { const sp = document.createElement("small"); sp.textContent = speed.toFixed(1) + " رمز/ث"; row.appendChild(sp); }
+  bubble.appendChild(row);
 }
 function finish(id) { delete handlers[id]; abortCurrent = null; stopUI = null; clearTimeout(killTimer); setBusy(false); input.focus(); }
 
@@ -560,7 +729,7 @@ function transcribe(arrayBuffer) {
       if (d.type === "asr" && d.text) ask(d.text);
       else showError(d.type === "error" ? "فشل تفريغ الصوت: " + d.message : "لم يُكتشف أي كلام في التسجيل.");
     };
-    worker.postMessage({ type: "asr", id, audio }, [audio.buffer]);
+    worker.postMessage({ type: "asr", id, audio, name: $("#asrSel").value, lang: $("#asrLang").value }, [audio.buffer]);
   }).catch((e) => { note.remove(); setBusy(false); showError("تعذّر قراءة الملف الصوتي: " + e.message); });
 }
 let rec = null, chunks = [];
@@ -617,6 +786,7 @@ function submit() { const t = input.value.trim(); if (!t) return; input.value = 
 sendBtn.onclick = submit;
 stopBtn.onclick = () => {
   if (stopUI) stopUI();
+  if (wl) wl.engine.interruptGenerate();
   worker.postMessage({ type: "stop" });
   clearTimeout(killTimer); killTimer = setTimeout(() => { if (busy) hardReset(); }, 1500);
 };
@@ -647,6 +817,21 @@ $("#menu").onclick = () => $("#side").classList.toggle("open");
 $("#scrim").onclick = closeSide;
 main.addEventListener("click", closeSide);
 
+$("#exp").onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(sessions)], { type: "application/json" })); a.download = "chats.json"; a.click(); };
+$("#imp").onclick = () => $("#impFile").click();
+$("#impFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text()); let n = 0;
+    for (const [k, v] of Object.entries(j)) if (v && Array.isArray(v.messages) && !sessions[k]) {
+      sessions[k] = { title: String(v.title || "دردشة"), messages: v.messages.filter((m) => m && typeof m.content === "string" && (m.role === "user" || m.role === "assistant")) }; n++;
+    }
+    saveSessions(); renderHistory(); alert(`تم استيراد ${n} محادثة.`);
+  } catch (err) { alert("ملف غير صالح."); }
+};
+const syncAsr = () => { $("#m-asr small").textContent = $("#asrSel").value; setModel("asr", "", 0); };
+$("#asrSel").onchange = syncAsr;
+syncAsr(); renderDocs();
 syncModelUI(); syncVis(); setBusy(false); renderHistory(); loadSession(currentSessionId);
 </script>
 </body>
