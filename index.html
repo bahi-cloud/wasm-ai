@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>دردشة محلية بالذكاء الاصطناعي</title>
 <style>
+/* ===== Design tokens ===== */
 :root{--bg:#0f172a;--panel:#111c33;--ai:#1e293b;--user:#0284c7;--line:#27344d;--text:#e2e8f0;--muted:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--errbg:#450a0a}
 :root[data-theme=light]{--bg:#f1f5f9;--panel:#fff;--ai:#e6edf5;--line:#d3dde9;--text:#0f172a;--muted:#5b6b82;--errbg:#fee2e2}
 *{box-sizing:border-box;margin:0}
@@ -13,25 +14,21 @@ body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-s
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 :focus-visible{outline:2px solid var(--user);outline-offset:2px}
 
-/* Sidebar */
-aside{grid-area:side;background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;overflow:auto;position:relative;z-index:16}
+/* ===== Sidebar ===== */
+aside{grid-area:side;background:var(--panel);border-inline-end:1px solid var(--line);padding:18px 14px;overflow:auto}
 aside h2{font-size:15px;margin-bottom:10px}
 aside section{margin-bottom:22px}
 .model{background:var(--ai);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px}
 .model b{display:flex;align-items:center;gap:8px;font-weight:600}
 .model small{color:var(--muted);display:block;margin-top:3px;direction:ltr;text-align:right;word-break:break-all}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
-.dot.loading{background:var(--warn);animation:pulse 1s infinite}
-.dot.ready{background:var(--ok)}
-.dot.error{background:var(--err)}
-@keyframes pulse{50%{opacity:.4}}
+.dot.loading{background:var(--warn)}.dot.ready{background:var(--ok)}.dot.error{background:var(--err)}
 .bar{height:5px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden;display:none}
 .bar i{display:block;height:100%;width:0;background:var(--user);transition:width .2s}
 .model.loading .bar{display:block}
-.caps{font-size:13px;color:var(--muted);line-height:1.9}
-.caps b{color:var(--text);font-weight:600}
+.caps{font-size:13px;color:var(--muted);line-height:1.9}.caps b{color:var(--text);font-weight:600}
 
-/* Header */
+/* ===== Header ===== */
 header{grid-area:head;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line)}
 header h1{font-size:17px;flex:1}
 .badge{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--ai);border:1px solid var(--line)}
@@ -41,8 +38,8 @@ header h1{font-size:17px;flex:1}
 .note{grid-area:note;background:#0c4a6e;color:#e0f2fe;font-size:13px;padding:8px 18px;display:flex;gap:10px;align-items:center}
 .note button{margin-inline-start:auto;display:grid}
 
-/* Messages */
-main{grid-area:main;overflow-y:auto;padding:22px 18px;scroll-behavior:smooth}
+/* ===== Messages ===== */
+main{grid-area:main;overflow-y:auto;padding:22px 18px}
 .wrap{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 .msg{max-width:85%;padding:11px 15px;border-radius:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.user{background:var(--user);color:#fff;align-self:flex-start;border-end-start-radius:4px}
@@ -54,28 +51,25 @@ main{grid-area:main;overflow-y:auto;padding:22px 18px;scroll-behavior:smooth}
 .empty h2{color:var(--text);margin-bottom:8px}
 .typing{display:inline-flex;gap:4px;vertical-align:middle}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
-.typing i:nth-child(2){animation-delay:.15s}
-.typing i:nth-child(3){animation-delay:.3s}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 @keyframes b{0%,60%,100%{opacity:.3}30%{opacity:1}}
 @media (prefers-reduced-motion:reduce){.typing i{animation:none}main{scroll-behavior:auto}}
 
-/* Footer / input */
+/* ===== Footer / input ===== */
 footer{grid-area:foot;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
-.box{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:6px;background:var(--ai);border:1px solid var(--line);border-radius:14px;padding:6px;position:relative}
+.box{max-width:820px;margin:0 auto;display:flex;align-items:flex-end;gap:6px;background:var(--ai);border:1px solid var(--line);border-radius:14px;padding:6px}
 textarea{flex:1;background:none;border:0;color:var(--text);font:inherit;resize:none;max-height:160px;padding:9px 8px;outline:none;line-height:1.6}
-.ic{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center;transition:background .15s}
+.ic{width:38px;height:38px;border-radius:10px;flex:none;display:grid;place-items:center}
 .ic:hover{background:var(--line)}
 .ic.rec{background:var(--err);color:#fff;animation:b 1s infinite}
-.ic.ok{color:var(--ok)}
-#send{background:var(--user);color:#fff}
-#send .i{transform:scaleX(-1)}
-#send:disabled{opacity:.4;cursor:not-allowed}
+#send{background:var(--user);color:#fff}#send .i{transform:scaleX(-1)}#send:disabled{opacity:.4;cursor:not-allowed}
 #stop{background:var(--err);color:#fff;display:none}
 .hint{max-width:820px;margin:6px auto 0;font-size:12px;color:var(--muted);text-align:center}
 
-/* Icons, popover, sidebar controls */
+/* ===== Icons, popover, sidebar controls ===== */
 .i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 [hidden]{display:none!important}
+.box{position:relative}
 .pop{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;min-width:200px;box-shadow:0 8px 24px #0005;z-index:5}
 .pop button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:8px;font-size:14px;text-align:start}
 .pop button:hover{background:var(--ai)}
@@ -83,11 +77,13 @@ select{width:100%;background:var(--ai);color:var(--text);border:1px solid var(--
 select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
 .wide{width:100%;justify-content:center}
 .sub{font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:8px}
+
 .acts{display:flex;gap:4px;margin-top:6px}
 .acts button{padding:5px 7px;border-radius:6px;color:var(--muted);display:grid}
-.acts button:hover{background:var(--line)}
-.acts button.ok{color:var(--ok)}
+.acts button:hover{background:var(--line)}.acts button.ok{color:var(--ok)}
 .diag{font-size:11px;color:var(--muted);white-space:pre-wrap;direction:ltr;text-align:left;max-height:180px;overflow:auto;background:var(--ai);border-radius:8px;padding:8px}
+
+/* ===== History List ===== */
 .history-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;margin-bottom:4px;background:var(--ai);color:var(--text)}
 .history-item:hover{background:var(--line)}
 .history-item.active{border:1px solid var(--user)}
@@ -96,9 +92,7 @@ select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
 .history-item:hover .del-btn{display:block}
 .history-item .del-btn:hover{color:var(--err)}
 
-/* Mobile */
-#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:15;backdrop-filter:blur(2px)}
-#overlay.show{display:block}
+/* ===== Mobile ===== */
 @media (max-width:800px){
   body{grid-template-columns:1fr;grid-template-areas:"head" "note" "main" "foot"}
   aside{position:fixed;inset:0 0 0 auto;width:280px;max-width:85vw;z-index:20;transform:translateX(100%);transition:transform .25s}
@@ -125,27 +119,26 @@ select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
 <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4M4 5v3h3M4 13a8 8 0 0 0 14.5 4M20 19v-3h-3"/></symbol>
 <symbol id="i-chip" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/></symbol>
-<symbol id="i-speaker" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></symbol>
 </svg>
 
-<div id="overlay"></div>
-
+<!-- ===== Sidebar: models + device capabilities ===== -->
 <aside id="side">
   <section>
     <h2>المحادثات</h2>
-    <button class="ghost wide" id="newChatBtn" style="margin-bottom:10px"><svg class="i"><use href="#i-plus"/></svg> محادثة جديدة</button>
-    <div id="historyList" style="max-height:200px;overflow-y:auto"></div>
+    <button class="ghost wide" id="newChatBtn" style="margin-bottom: 10px;"><svg class="i"><use href="#i-plus"/></svg> محادثة جديدة</button>
+    <div id="historyList" style="max-height: 200px; overflow-y: auto;"></div>
   </section>
+
   <section>
     <h2>نموذج الدردشة</h2>
     <select id="modelSel" aria-label="اختيار النموذج" dir="ltr"></select>
     <p class="sub" id="modelNote"></p>
-    <label class="sub" style="display:flex;gap:6px;align-items:flex-start"><input type="checkbox" id="gpuOpt"><span>WebGPU (تجريبي): أسرع، لكن قد يتجمد على بعض الهواتف.</span></label>
+    <label class="sub" style="display:flex;gap:6px;align-items:flex-start"><input type="checkbox" id="gpuOpt"><span>WebGPU (تجريبي): أسرع، لكنه قد يتجمد على بعض الهواتف.</span></label>
     <button class="ghost wide" id="unload"><svg class="i"><use href="#i-chip"/></svg>تفريغ النموذج من الذاكرة</button>
   </section>
   <section>
-    <h2>حالة النماذج</h2>
-    <div class="model" id="m-chat"><b><span class="dot"></span>الدردشة</b><small>—</small><div class="bar"><i></i></div></div>
+    <h2>النماذج</h2>
+    <div class="model" id="m-chat"><b><span class="dot"></span>الدردشة</b><small>Xenova/Qwen1.5-0.5B-Chat</small><div class="bar"><i></i></div></div>
     <div class="model" id="m-asr"><b><span class="dot"></span>تحويل الصوت إلى نص</b><small>Xenova/whisper-tiny.en</small><div class="bar"><i></i></div></div>
     <div class="model" id="m-cap"><b><span class="dot"></span>وصف الصور</b><small>Xenova/vit-gpt2-image-captioning</small><div class="bar"><i></i></div></div>
   </section>
@@ -159,24 +152,27 @@ select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
   </section>
 </aside>
 
+<!-- ===== Header ===== -->
 <header>
   <button class="ghost" id="menu" aria-label="القائمة"><svg class="i"><use href="#i-menu"/></svg></button>
   <h1>دردشة ذكاء اصطناعي محلية</h1>
   <span class="badge" id="backend">…</span>
   <button class="ghost" id="theme" aria-label="تبديل المظهر"></button>
-  <button class="ghost" id="clear"><svg class="i"><use href="#i-trash"/></svg>مسح</button>
+  <button class="ghost" id="clear"><svg class="i"><use href="#i-trash"/></svg>مسح المحادثة</button>
 </header>
 
+<!-- ===== Privacy banner ===== -->
 <div class="note" id="note">
-  <span>تُعالَج محادثاتك داخل المتصفح فقط ولا تُرسَل إلى أي خادم. التحميل الأول يحتاج إنترنت، وبعده يُحفَظ في ذاكرة المتصفح.</span>
+  <span>تُعالَج محادثاتك داخل المتصفح فقط ولا تُرسَل إلى أي خادم. التحميل الأول لكل نموذج يحتاج إنترنت، وبعده يُحفَظ في ذاكرة المتصفح.</span>
   <button id="noteX" aria-label="إغلاق"><svg class="i"><use href="#i-x"/></svg></button>
 </div>
 
+<!-- ===== Messages ===== -->
 <main id="main"><div class="wrap" id="log"></div></main>
 
+<!-- ===== Input ===== -->
 <footer>
   <div class="box">
-    <button class="ic" id="speak" title="قراءة آخر رد بصوت" aria-label="قراءة آخر رد"><svg class="i"><use href="#i-speaker"/></svg></button>
     <button class="ic" id="plus" title="إرفاق" aria-label="إرفاق" aria-haspopup="true" aria-expanded="false"><svg class="i"><use href="#i-plus"/></svg></button>
     <div class="pop" id="pop" hidden>
       <button id="img"><svg class="i"><use href="#i-img"/></svg>إرفاق صورة</button>
@@ -187,13 +183,14 @@ select:disabled,.ghost:disabled{opacity:.5;cursor:not-allowed}
     <button class="ic" id="stop" title="إيقاف التوليد" aria-label="إيقاف"><svg class="i"><use href="#i-stop"/></svg></button>
     <button class="ic" id="send" title="إرسال" aria-label="إرسال"><svg class="i"><use href="#i-send"/></svg></button>
   </div>
-  <p class="hint">النماذج الصغيرة (60MB-600MB) تُحمَّل عند أول استخدام. Qwen هو الأفضل للعربية. الصوت يدعم الإنجليزية فقط.</p>
+  <p class="hint">نموذج صغير (0.5B): قد يخطئ، وأداؤه بالإنجليزية أفضل. تفريغ الصوت يدعم الإنجليزية فقط.</p>
   <input type="file" id="imgFile" accept="image/*" hidden>
   <input type="file" id="audFile" accept="audio/*" hidden>
 </footer>
 
+<!-- ===== Worker source (runs from a Blob URL; keeps the UI responsive) ===== -->
 <script type="text/js-worker" id="worker-src">
-// ============ Load Transformers.js v3 ============
+// Load Transformers.js v3 (needed for WebGPU + TextStreamer); try a second CDN if the first fails
 let pipeline, TextStreamer, InterruptableStoppingCriteria, env, importErr = "";
 for (const url of [
   "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1",
@@ -201,68 +198,29 @@ for (const url of [
 ]) {
   try {
     ({ pipeline, TextStreamer, InterruptableStoppingCriteria, env } = await import(url));
-    importErr = ""; break;
+    importErr = "";
+    break;
   } catch (e) { importErr = String((e && e.message) || e); console.warn(url, e); }
 }
 const READY = !!pipeline;
+
 if (READY) {
   env.allowLocalModels = false;
   try { env.backends.onnx.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 2) : 1; } catch (e) {}
 }
 const post = (m) => self.postMessage(m);
 const hasGPU = !!(self.navigator && self.navigator.gpu);
+// Diagnostics: a log line per phase + a heartbeat (no heartbeat = worker is busy computing)
 const log = (text) => post({ type: "log", text });
 setInterval(() => post({ type: "hb" }), 1000);
 log(READY ? "المكتبة جاهزة" : "فشل تحميل المكتبة: " + importErr);
-
 let cache = {};
 let chatId = null, chatIdx = -1;
-const startIdx = {};
-let stopFlag = false;
+const startIdx = {}; // per model: first option set not yet known to fail
 const stopper = READY ? new InterruptableStoppingCriteria() : null;
+let stopFlag = false;
 
-// ============ Model registry ============
-// ✅ أُعيد بناء القائمة بالكامل: نماذج ONNX حقيقية ومتاحة فعلاً
-const MODELS = {
-  // Chat / Instruct
-  qwen:      { kind: "chat",   name: "Xenova/Qwen1.5-0.5B-Chat",             dtypes: ["q8", "q4"] },
-  qwen25:    { kind: "chat",   name: "onnx-community/Qwen2.5-0.5B-Instruct", dtypes: ["q4", "q8"] },
-  qwen3:     { kind: "chat",   name: "onnx-community/Qwen3-0.6B-ONNX",       dtypes: ["q4", "q8"] },
-  lfm2:      { kind: "chat",   name: "onnx-community/LFM2-350M-ONNX",        dtypes: ["q4", "q8"] },
-  smol360:   { kind: "chat",   name: "onnx-community/SmolLM2-360M-Instruct", dtypes: ["q4", "q8"] },
-  smol135:   { kind: "chat",   name: "onnx-community/SmolLM2-135M-Instruct", dtypes: ["q4", "q8"] },
-  // T5 (seq2seq)
-  lamini:    { kind: "t5",     name: "Xenova/LaMini-Flan-T5-77M",            dtypes: ["q8", "fp32"] },
-  lamini248: { kind: "t5",     name: "Xenova/LaMini-Flan-T5-248M",           dtypes: ["q8", "fp32"] },
-  flansmall: { kind: "t5",     name: "Xenova/flan-t5-small",                 dtypes: ["q8", "fp32"] },
-  flanbase:  { kind: "t5",     name: "Xenova/flan-t5-base",                  dtypes: ["q8", "fp32"] },
-  t5small:   { kind: "t5",     name: "Xenova/t5-small",                      dtypes: ["q8", "fp32"] },
-  // Completion (raw LM)
-  distilgpt2:{ kind: "alpaca", name: "Xenova/distilgpt2",                    dtypes: ["q8", "fp32"] },
-  gpt2:      { kind: "alpaca", name: "Xenova/gpt2",                          dtypes: ["q8", "fp32"] },
-  opt125:    { kind: "alpaca", name: "Xenova/opt-125m",                      dtypes: ["q8", "fp32"] },
-  lgpt:      { kind: "alpaca", name: "Xenova/LaMini-GPT-124M",               dtypes: ["q8", "fp32"] },
-};
-for (const m of Object.values(MODELS)) m.task = m.kind === "t5" ? "text2text-generation" : "text-generation";
-
-// ============ Helpers ============
-function optsFor(id, gpu) {
-  const m = MODELS[id] || MODELS.qwen;
-  const wasm = m.dtypes.map((dtype) => ({ device: "wasm", dtype }));
-  return gpu && hasGPU && m.kind === "chat" ? [{ device: "webgpu", dtype: "q4" }, ...wasm] : wasm;
-}
-
-async function dispose(key) {
-  const p = cache[key]; delete cache[key];
-  if (p) post({ type: "evicted", key });
-  if (p) { try { const pl = await p; if (pl.dispose) await pl.dispose(); } catch (e) { console.warn(e); } }
-}
-
-async function freeOthers(keep) {
-  for (const k of Object.keys(cache)) if (k !== keep) await dispose(k);
-}
-
-// ============ Generic pipeline loader with fallback ============
+// Lazy-load a pipeline once; try each option set (WebGPU first, then WASM)
 function load(key, task, model, optionSets) {
   if (cache[key]) return cache[key];
   cache[key] = (async () => {
@@ -273,7 +231,7 @@ function load(key, task, model, optionSets) {
       files[p.file] = p;
       let l = 0, t = 0;
       for (const f of Object.values(files)) { l += f.loaded || 0; t += f.total || 0; }
-      const now = Date.now();
+      const now = Date.now();  // throttle: at most 4 progress messages per second
       if (now - lastPost > 250) { lastPost = now; post({ type: "progress", key, pct: t ? (l / t) * 100 : 0 }); }
     };
     post({ type: "loading", key });
@@ -293,30 +251,70 @@ function load(key, task, model, optionSets) {
   return cache[key];
 }
 
-// ============ ✅ إصلاح جذري: loaders غير تكرارية ============
+// Model registry. kind: "chat" = message array + chat template, "t5" = seq2seq string prompt,
+// "alpaca" = small causal LM that expects an instruction template. All run on WASM.
+const MODELS = {
+  qwen:      { kind: "chat",   name: "Xenova/Qwen1.5-0.5B-Chat",              dtypes: ["q8", "q4"] },
+  qwen25:    { kind: "chat",   name: "onnx-community/Qwen2.5-0.5B-Instruct",  dtypes: ["q4", "q8"] },
+  qwen3_06b: { kind: "chat",   name: "onnx-community/Qwen3-0.6B-ONNX",        dtypes: ["q4", "q8"] },
+  lfm2:      { kind: "chat",   name: "onnx-community/LFM2-350M-ONNX",         dtypes: ["q4", "q8"] },
+  smol360:   { kind: "chat",   name: "onnx-community/SmolLM2-360M-Instruct",  dtypes: ["q4", "q8"] },
+  smol135:   { kind: "chat",   name: "onnx-community/SmolLM2-135M-Instruct",  dtypes: ["q4", "q8"] },
+  lamini:    { kind: "t5",     name: "Xenova/LaMini-Flan-T5-77M",             dtypes: ["q8", "fp32"] },
+  lamini248: { kind: "t5",     name: "Xenova/LaMini-Flan-T5-248M",            dtypes: ["q8", "fp32"] },
+  flansmall: { kind: "t5",     name: "Xenova/flan-t5-small",                  dtypes: ["q8", "fp32"] },
+  flanbase:  { kind: "t5",     name: "Xenova/flan-t5-base",                   dtypes: ["q8", "fp32"] },
+  lgpt:      { kind: "alpaca", name: "Xenova/LaMini-GPT-124M",                dtypes: ["q8", "fp32"] },
+  
+  // نماذج خفيفة إضافية
+  distilgpt2:     { kind: "chat", name: "Xenova/distilgpt2", dtypes: ["fp16","q4"] },
+  "gpt2":         { kind: "chat", name: "Xenova/gpt2",       dtypes: ["fp16","q4"] },
+  "opt-350m":     { kind: "chat", name: "Xenova/opt-350m",   dtypes: ["fp16","q4"] },
+  "t5-base":      { kind: "t5",   name: "Xenova/t5-base",    dtypes: ["fp32","q8"] },
+};
+for (const m of Object.values(MODELS)) m.task = m.kind === "t5" ? "text2text-generation" : "text-generation";
+
+// WASM always works; WebGPU is opt-in and only for chat-style models
+function optsFor(id, gpu) {
+  const m = MODELS[id] || MODELS.qwen;
+  const wasm = m.dtypes.map((dtype) => ({ device: "wasm", dtype }));
+  return gpu && hasGPU && m.kind === "chat" ? [{ device: "webgpu", dtype: "q4" }, ...wasm] : wasm;
+}
+
+// Release one pipeline (frees ONNX sessions / GPU buffers)
+async function dispose(key) {
+  const p = cache[key]; delete cache[key];
+  if (p) post({ type: "evicted", key });
+  if (p) { try { const pl = await p; if (pl.dispose) await pl.dispose(); } catch (e) { console.warn(e); } }
+}
+
+// Memory manager: only one model family stays in memory at a time
+async function freeOthers(keep) {
+  for (const k of Object.keys(cache)) if (k !== keep) await dispose(k);
+}
+
 const loaders = {
   chat: async (key, idx, m, o) => {
-    // Fast path: same model + same option set + cached
-    if (cache["chat"] && chatId === key && chatIdx === idx) return cache["chat"];
-    // Dispose previous chat model if switching
-    if (cache["chat"]) await dispose("chat");
     await freeOthers("chat");
+    // switching model / option set: free the old pipeline first
+    if (chatId && (chatId !== key || chatIdx !== idx)) await dispose("chat");
     chatId = key; chatIdx = idx;
     return load("chat", m.task, m.name, [o]);
   },
-  asr: async () => {
-    if (cache["asr"]) return cache["asr"];
-    await freeOthers("asr");
-    return load("asr", "automatic-speech-recognition", "Xenova/whisper-tiny.en", [{ device: "wasm", dtype: "q8" }]);
-  },
-  cap: async () => {
-    if (cache["cap"]) return cache["cap"];
-    await freeOthers("cap");
-    return load("cap", "image-to-text", "Xenova/vit-gpt2-image-captioning", [{ device: "wasm", dtype: "q8" }]);
-  },
+  asr: async () => { await freeOthers("asr"); return load("asr", "automatic-speech-recognition", "Xenova/whisper-tiny.en", [{ device: "wasm" }]); },
+  cap: async () => { await freeOthers("cap"); return load("cap", "image-to-text", "Xenova/vit-gpt2-image-captioning", [{ device: "wasm" }]); },
 };
 
-// ============ Chat generation ============
+// Pull the generated text out of a pipeline result (removing an echoed prompt)
+function extract(r, input) {
+  try {
+    let g = r[0].generated_text;
+    if (typeof g !== "string") return g[g.length - 1].content || "";
+    if (typeof input === "string" && g.startsWith(input)) g = g.slice(input.length);
+    return g;
+  } catch (e) { return ""; }
+}
+
 async function runChat(data, id) {
   const m = MODELS[data.model] || MODELS.qwen;
   const t5 = m.kind === "t5";
@@ -324,37 +322,34 @@ async function runChat(data, id) {
   const optList = optsFor(data.model, data.gpu);
   let started = false;
   stopFlag = false;
-
+  
   for (let i = startIdx[key] || 0; i < optList.length; i++) {
     const last = i === optList.length - 1;
     try {
       const gen = await loaders.chat(key, i, m, optList[i]);
       if (!started) { started = true; post({ type: "start", id }); }
       log("بدء التوليد");
-      if (stopper) stopper.reset();
-
+      stopper.reset();
+      
       let streamed = "";
-      // ✅ TextStreamer جديد لكل محاولة (كان خطأ في النسخة الأصلية)
       const streamer = new TextStreamer(gen.tokenizer, {
         skip_prompt: true, skip_special_tokens: true,
-        callback_function: (t) => {
-          if (!streamed) log("وصل أول رمز");
-          streamed += t;
-          post({ type: "token", id, text: t });
-        },
+        callback_function: (t) => { if (!streamed) log("وصل أول رمز"); streamed += t; post({ type: "token", id, text: t }); },
       });
 
       const base = { max_new_tokens: t5 ? 200 : 256, streamer, stopping_criteria: stopper };
       const inputs = t5 ? [data.messages, data.plain] : [data.messages];
       let text = "";
-
+      
       for (const input of inputs) {
         if (!input) continue;
+        streamed = ""; 
         const o = m.kind === "chat"
           ? { ...base, do_sample: true, temperature: 0.7, top_p: 0.9, repetition_penalty: 1.1 }
           : { ...base, do_sample: false, repetition_penalty: t5 ? 1.0 : 1.2 };
-
+        
         const result = await gen(input, o);
+        
         text = streamed.trim();
         if (!text) {
           const g = result[0].generated_text;
@@ -367,18 +362,17 @@ async function runChat(data, id) {
         }
         if (text.trim() || stopFlag) break;
       }
-
-      text = text.replace(/^\s*(Assistant|### Response):\s*/i, "");
-
-      if (text.trim() || stopFlag) {
-        post({ type: "done", id, text });
-        return;
+      
+      text = text.replace(/^\s*Assistant:\s*/i, "");
+      
+      if (text.trim() || stopFlag) { 
+        post({ type: "done", id, text }); 
+        return; 
       }
-
-      // لم يُنتج نصاً — جرّب الخيار التالي
+      
       await dispose("chat"); startIdx[key] = i + 1;
       if (last) {
-        post({ type: "error", id, message: "فشل التوليد: النموذج لم يُنتج أي نص. جرّب نموذجاً آخر." });
+        post({ type: "error", id, message: "فشل التوليد: النموذج لم ينتج أي نص. جرّب نموذجاً آخر." });
         return;
       }
     } catch (e) {
@@ -389,21 +383,16 @@ async function runChat(data, id) {
   }
 }
 
-// ============ Message handler ============
 self.onmessage = async ({ data }) => {
   const { type, id } = data;
-  if (type === "stop") {
-    stopFlag = true;
-    if (stopper) stopper.interrupt();
-    return;
-  }
+  if (type === "stop") { stopFlag = true; if (stopper) stopper.interrupt(); return; }
   if (!READY && (type === "chat" || type === "asr" || type === "caption")) {
-    post({ type: "error", id, message: "تعذّر تحميل مكتبة Transformers.js. تحقق من الإنترنت أو من حظر cdn.jsdelivr.net. " + importErr });
+    post({ type: "error", id, message: "تعذّر تحميل مكتبة Transformers.js من الشبكة. تحقق من الإنترنت أو من حظر cdn.jsdelivr.net. " + importErr });
     return;
   }
   if (type === "unload") {
     for (const k of Object.keys(cache)) await dispose(k);
-    cache = {}; chatId = null; chatIdx = -1;
+    cache = {}; chatId = null;
     post({ type: "unloaded" });
     return;
   }
@@ -426,13 +415,13 @@ self.onmessage = async ({ data }) => {
 </script>
 
 <script type="module">
+/* ===== DOM helpers ===== */
 const $ = (s) => document.querySelector(s);
 const log = $("#log"), main = $("#main"), input = $("#input");
 const sendBtn = $("#send"), stopBtn = $("#stop"), micBtn = $("#mic");
 const icon = (n) => `<svg class="i"><use href="#i-${n}"/></svg>`;
-const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 
-// ===== Theme =====
+/* ===== Theme (saved choice, else system preference) ===== */
 const themeBtn = $("#theme");
 let theme = null;
 try { theme = localStorage.getItem("theme"); } catch (e) {}
@@ -447,69 +436,51 @@ function applyTheme(t) {
 themeBtn.onclick = () => applyTheme(theme === "dark" ? "light" : "dark");
 applyTheme(theme);
 
-// ===== Capability =====
+/* ===== Capability detection ===== */
 const gpu = !!navigator.gpu;
 const mem = navigator.deviceMemory ? navigator.deviceMemory + " GB" + (navigator.deviceMemory >= 8 ? "+" : "") : "غير معروفة";
 $("#caps").innerHTML =
   `WebGPU: <b>${gpu ? "متاح" : "غير متاح"}</b><br>الذاكرة: <b>${mem}</b><br>أنوية المعالج: <b>${navigator.hardwareConcurrency || "؟"}</b><br>التشغيل: <b>WASM (WebGPU اختياري)</b>`;
 $("#backend").textContent = "WASM";
 
-// ===== Worker =====
+/* ===== Worker (created from the inline script via Blob URL) ===== */
 const blob = new Blob([$("#worker-src").textContent], { type: "text/javascript" });
 const blobUrl = URL.createObjectURL(blob);
 let worker = new Worker(blobUrl, { type: "module" });
+// Kill a stuck worker and start a fresh one with the same handlers
 function respawnWorker() {
   const old = worker, w = new Worker(blobUrl, { type: "module" });
   w.onmessage = old.onmessage; w.onerror = old.onerror;
   old.terminate(); worker = w;
 }
 
-// ===== State =====
+/* ===== State ===== */
 const SYSTEM = { role: "system", content: "You are a helpful assistant. Answer concisely and in the same language as the user." };
 let busy = false;
 let reqId = 0;
-let pendingImage = "";
-const handlers = {};
+let pendingImage = "";     // caption of the last attached image, added to the next prompt
+const handlers = {};       // per-request callbacks by id
 let abortCurrent = null, killTimer = null, stopUI = null;
-let lastHb = Date.now();
+let lastHb = Date.now(), lastLog = "";
 let diagLines = [];
 function onLog(t) {
+  lastLog = t;
   diagLines.push(new Date().toLocaleTimeString("en-GB") + "  " + t);
   if (diagLines.length > 40) diagLines.shift();
   $("#diag").textContent = diagLines.join("\n");
 }
-let progressTarget = null;
+let progressTarget = null; // element that shows model-loading progress
 
-// ===== Sessions =====
-let sessions = {};
-let currentSessionId = "";
-try {
-  sessions = JSON.parse(localStorage.getItem("chatSessions") || "{}");
-  currentSessionId = localStorage.getItem("currentSessionId") || uid();
-} catch (e) { sessions = {}; currentSessionId = uid(); }
+/* ===== Chat Sessions (History) ===== */
+let sessions = JSON.parse(localStorage.getItem("chatSessions") || "{}");
+let currentSessionId = localStorage.getItem("currentSessionId") || crypto.randomUUID();
 if (!sessions[currentSessionId]) {
   sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
 }
-
 function saveSessions() {
-  try {
-    const keys = Object.keys(sessions);
-    if (keys.length > 20) {
-      const keep = new Set([currentSessionId, ...keys.slice(-19)]);
-      for (const k of keys) if (!keep.has(k)) delete sessions[k];
-    }
-    localStorage.setItem("chatSessions", JSON.stringify(sessions));
-    localStorage.setItem("currentSessionId", currentSessionId);
-  } catch (e) {
-    console.warn("Storage full, pruning", e);
-    const keys = Object.keys(sessions);
-    if (keys.length > 1) {
-      delete sessions[keys[0]];
-      try { localStorage.setItem("chatSessions", JSON.stringify(sessions)); } catch (e2) {}
-    }
-  }
+  localStorage.setItem("chatSessions", JSON.stringify(sessions));
+  localStorage.setItem("currentSessionId", currentSessionId);
 }
-
 function renderHistory() {
   const list = $("#historyList");
   list.innerHTML = "";
@@ -517,19 +488,14 @@ function renderHistory() {
     const s = sessions[id];
     const div = document.createElement("div");
     div.className = `history-item ${id === currentSessionId ? "active" : ""}`;
-    const title = document.createElement("span");
-    title.className = "title";
-    title.textContent = s.title;
-    const del = document.createElement("button");
-    del.className = "del-btn"; del.title = "حذف"; del.innerHTML = icon("trash");
-    div.append(title, del);
+    div.innerHTML = `<span class="title">${s.title}</span><button class="del-btn" title="حذف">${icon("trash")}</button>`;
     div.onclick = (e) => {
       if (e.target.closest(".del-btn")) {
         e.stopPropagation();
-        if (confirm("حذف هذه المحادثة؟")) {
+        if (confirm("هل أنت متأكد من حذف هذه المحادثة؟")) {
           delete sessions[id];
           if (currentSessionId === id) {
-            currentSessionId = uid();
+            currentSessionId = crypto.randomUUID();
             sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
           }
           saveSessions(); renderHistory(); loadSession(currentSessionId);
@@ -538,7 +504,7 @@ function renderHistory() {
       }
       currentSessionId = id;
       saveSessions(); renderHistory(); loadSession(id);
-      closeSidebar();
+      if (window.innerWidth <= 800) $("#side").classList.remove("open");
     };
     list.appendChild(div);
   });
@@ -550,17 +516,16 @@ function updateSessionTitle(text) {
   }
 }
 
-// ===== Model UI =====
-// ✅ استخدام getElementById بدل querySelector (يدعم أي مفاتيح)
+/* ===== Sidebar model status ===== */
 function setModel(key, state, pct) {
-  const el = document.getElementById("m-" + key);
+  const el = $("#m-" + key);
   if (!el) return;
   el.className = "model " + (state === "loading" ? "loading" : "");
   el.querySelector(".dot").className = "dot " + state;
   if (pct != null) el.querySelector(".bar i").style.width = pct + "%";
 }
 
-// ===== Messages =====
+/* ===== Messages ===== */
 function addMsg(role, text = "", extraClass = "") {
   $(".empty")?.remove();
   const d = document.createElement("div");
@@ -579,24 +544,17 @@ function typing() {
 function welcome() {
   log.innerHTML = '<div class="empty"><h2>مرحباً 👋</h2><p>اكتب رسالتك للبدء. سيُحمَّل النموذج عند أول رسالة.</p></div>';
 }
-
-// ✅ إخفاء بادئة وصف الصورة عند عرض السجل
-function displayContent(m) {
-  let t = m.content;
-  if (m.role === "user" && t.startsWith("[Image description:")) {
-    t = t.replace(/^\[Image description:[^\]]*\]\n?/, "").trim() || "(صورة)";
-  }
-  return t;
-}
-
 function loadSession(id) {
   log.innerHTML = "";
   const msgs = sessions[id].messages;
-  if (msgs.length === 0) { welcome(); return; }
-  msgs.forEach(m => {
-    const d = addMsg(m.role, displayContent(m));
-    if (m.role === "assistant") addActions(d, m.content);
-  });
+  if (msgs.length === 0) {
+    welcome();
+  } else {
+    msgs.forEach(m => {
+      const d = addMsg(m.role, m.content);
+      if (m.role === "assistant") addActions(d, m.content);
+    });
+  }
 }
 function setBusy(v) {
   busy = v;
@@ -606,7 +564,7 @@ function setBusy(v) {
   sendBtn.style.display = v ? "none" : "grid";
 }
 
-// ===== Worker events =====
+/* ===== Worker events ===== */
 worker.onmessage = ({ data }) => {
   const { type, key, id } = data;
   if (type === "loading") setModel(key, "loading", 0);
@@ -621,15 +579,15 @@ worker.onmessage = ({ data }) => {
   else if (type === "log") onLog(data.text);
   else if (type === "hb") lastHb = Date.now();
   else if (handlers[id]) handlers[id](data);
-  else if (type === "error" && key) setModel(key, "error");
+  if (type === "error" && key) setModel(key, "error");
 };
 worker.onerror = (e) => {
-  showError("تعذّر تشغيل المحرّك. تحقق من الاتصال. " + (e.message || ""));
+  showError("تعذّر تشغيل العامل (Worker). جرّب فتح الصفحة عبر خادم محلي أو متصفح حديث. " + (e.message || ""));
   setBusy(false);
 };
 function showError(msg) { addMsg("assistant", "⚠️ " + msg, "error"); }
 
-// ===== Chat =====
+/* ===== Chat: send text to the model and stream the answer ===== */
 function ask(text, regen = false) {
   if (busy || (!regen && !text.trim())) return;
   document.querySelectorAll(".regen").forEach((b) => b.remove());
@@ -639,7 +597,7 @@ function ask(text, regen = false) {
     const msgs = sessions[currentSessionId].messages;
     prompt = msgs.length ? msgs[msgs.length - 1].content : "";
   } else {
-    addMsg("user", text);  // نعرض فقط نص المستخدم
+    addMsg("user", text);
     prompt = pendingImage ? `[Image description: ${pendingImage}]\n${text}` : text;
     pendingImage = "";
     sessions[currentSessionId].messages.push({ role: "user", content: prompt });
@@ -656,28 +614,17 @@ function ask(text, regen = false) {
   const out = document.createElement("span");
   let answer = "";
   const id = ++reqId;
+
   let tm = null, t0 = 0;
-
-  const stopWait = () => {
-    clearInterval(tm);
-    status.remove();
-    bubble.querySelector(".typing")?.remove();
-    if (!out.isConnected) bubble.appendChild(out);
-  };
-
-  // ✅ إصلاح: لا نستخدم history.pop() (كان يمسح سجل المتصفح)
-  abortCurrent = () => {
-    stopWait();
-    if (!answer.trim()) {
-      bubble.remove();
-    } else {
-      const last = sessions[currentSessionId].messages.at(-1);
-      if (!last || last.content !== answer) {
-        sessions[currentSessionId].messages.push({ role: "assistant", content: answer });
-        saveSessions();
-      }
-      addActions(bubble, answer);
-    }
+  const stopWait = () => { clearInterval(tm); status.remove(); bubble.querySelector(".typing")?.remove(); if (!out.isConnected) bubble.appendChild(out); };
+  
+  abortCurrent = () => { 
+    stopWait(); 
+    if (!answer.trim()) { 
+      out.textContent = "(تم الإيقاف)"; 
+      sessions[currentSessionId].messages.pop(); 
+      saveSessions();
+    } 
   };
   stopUI = () => { clearInterval(tm); if (status.isConnected) status.textContent = "جارٍ الإيقاف…"; };
 
@@ -688,44 +635,46 @@ function ask(text, regen = false) {
       tm = setInterval(() => {
         const sec = Math.round((Date.now() - t0) / 1000);
         const quiet = Math.round((Date.now() - lastHb) / 1000);
-        status.textContent = `جارٍ التوليد… ${sec} ث | ` +
-          (quiet > 3 ? `المحرّك مشغول (${quiet} ث)` : "المحرّك يستجيب") +
-          (sec > 40 ? " — بطيء. جرّب نموذجاً أصغر." : "");
+        status.textContent = `جارٍ التوليد… ${sec} ث | ` + (quiet > 3 ? `المحرّك مشغول بالحساب (${quiet} ث بلا نبضة)` : "المحرّك يستجيب")
+          + (sec > 40 ? " — بطيء على جهازك. جرّب نموذجاً أصغر أو اضغط إيقاف." : "");
       }, 1000);
     }
     else if (d.type === "token") { if (!out.isConnected) stopWait(); answer += d.text; out.textContent = answer; scroll(); }
     else if (d.type === "done") {
       stopWait();
       if (!answer.trim() && d.text && d.text.trim()) { answer = d.text.trim(); out.textContent = answer; }
+      
       if (answer.trim()) {
         sessions[currentSessionId].messages.push({ role: "assistant", content: answer });
         saveSessions();
         addActions(bubble, answer);
-      } else { out.textContent = "(لا يوجد رد)"; }
+      } else { 
+        out.textContent = "(لا يوجد رد)"; 
+      }
       finish(id);
     } else if (d.type === "error") {
       clearInterval(tm); progressTarget = null; bubble.remove();
-      showError("فشل التحميل أو التوليد (ذاكرة أو اتصال).\n" + d.message);
+      showError("فشل تحميل النموذج أو التوليد (قد تكون الذاكرة غير كافية أو لا يوجد اتصال بالإنترنت).\n" + d.message);
       finish(id);
     }
   };
-
+  
   const kind = CHAT_MODELS[modelSel.value].kind;
   let payload;
-  const cleanHistory = sessions[currentSessionId].messages.filter(m =>
-    m.content && m.content.trim().length > 0 &&
-    !m.content.includes("(لا يوجد رد)") &&
+  
+  const cleanHistory = sessions[currentSessionId].messages.filter(m => 
+    m.content && m.content.trim().length > 0 && 
+    !m.content.includes("(لا يوجد رد)") && 
     !m.content.includes("(تم الإيقاف)") &&
     !m.content.includes("⚠️")
   );
 
   if (kind === "chat") payload = [SYSTEM, ...cleanHistory];
-  else if (kind === "alpaca") payload = "Below is an instruction. Write a response.\n\n### Instruction:\n" + prompt + "\n\n### Response:";
+  else if (kind === "alpaca") payload = "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n### Instruction:\n" + prompt + "\n\n### Response:";
   else payload = "User: " + prompt + "\nAssistant:";
-
   worker.postMessage({ type: "chat", id, model: modelSel.value, messages: payload, plain: prompt, gpu: $("#gpuOpt").checked });
 }
-
+// Copy / regenerate buttons under a finished answer
 function addActions(bubble, text) {
   const row = document.createElement("div"); row.className = "acts";
   const copy = document.createElement("button"); copy.title = "نسخ"; copy.innerHTML = icon("copy");
@@ -738,14 +687,16 @@ function addActions(bubble, text) {
   re.onclick = () => {
     if (busy) return;
     const msgs = sessions[currentSessionId].messages;
-    if (msgs.length && msgs[msgs.length - 1].role === "assistant") msgs.pop();
-    saveSessions(); bubble.remove(); ask("", true);
+    if (msgs.length && msgs[msgs.length - 1].role === "assistant") {
+      msgs.pop(); saveSessions();
+    }
+    bubble.remove(); ask("", true);
   };
   row.append(copy, re); bubble.appendChild(row);
 }
 function finish(id) { delete handlers[id]; abortCurrent = null; stopUI = null; clearTimeout(killTimer); setBusy(false); input.focus(); }
 
-// ===== Audio =====
+/* ===== Audio: decode to 16 kHz mono, transcribe, then send as text ===== */
 async function decodeAudio(arrayBuffer) {
   const ctx = new AudioContext({ sampleRate: 16000 });
   const buf = await ctx.decodeAudioData(arrayBuffer);
@@ -766,13 +717,13 @@ function transcribe(arrayBuffer) {
       progressTarget = null; note.remove(); delete handlers[id];
       setBusy(false);
       if (d.type === "asr" && d.text) ask(d.text);
-      else showError(d.type === "error" ? "فشل تفريغ الصوت: " + d.message : "لم يُكتشف أي كلام.");
+      else showError(d.type === "error" ? "فشل تفريغ الصوت: " + d.message : "لم يُكتشف أي كلام في التسجيل.");
     };
     worker.postMessage({ type: "asr", id, audio }, [audio.buffer]);
   }).catch((e) => { note.remove(); setBusy(false); showError("تعذّر قراءة الملف الصوتي: " + e.message); });
 }
 
-// ===== Recording =====
+/* ===== Recording with MediaRecorder ===== */
 let rec = null, chunks = [];
 const plusBtn = $("#plus"), pop = $("#pop");
 function closePop() { pop.hidden = true; plusBtn.setAttribute("aria-expanded", "false"); }
@@ -798,7 +749,7 @@ micBtn.onclick = async () => {
     };
     rec.start();
     plusBtn.classList.add("rec"); plusBtn.innerHTML = icon("stop"); plusBtn.title = "إيقاف التسجيل";
-  } catch (e) { showError("لا يمكن الوصول إلى الميكروفون (يتطلب https أو localhost)."); }
+  } catch (e) { showError("لا يمكن الوصول إلى الميكروفون. تأكد من منح الإذن (يتطلب https أو localhost)."); }
 };
 $("#aud").onclick = () => $("#audFile").click();
 $("#audFile").onchange = async (e) => {
@@ -806,7 +757,7 @@ $("#audFile").onchange = async (e) => {
   if (f) transcribe(await f.arrayBuffer());
 };
 
-// ===== Images =====
+/* ===== Images: chat model has no vision, so caption the image first ===== */
 $("#img").onclick = () => $("#imgFile").click();
 $("#imgFile").onchange = (e) => {
   const f = e.target.files[0]; e.target.value = "";
@@ -817,7 +768,7 @@ $("#imgFile").onchange = (e) => {
     const u = addMsg("user"); const im = new Image(); im.src = url; u.appendChild(im);
     const note = addMsg("assistant");
     const status = document.createElement("span");
-    status.className = "status"; status.textContent = "جارٍ توليد وصف للصورة…";
+    status.className = "status"; status.textContent = "نموذج الدردشة الحالي لا يدعم الرؤية. جارٍ توليد وصف للصورة…";
     note.append(status, typing());
     progressTarget = status; setBusy(true);
     const id = ++reqId;
@@ -825,7 +776,7 @@ $("#imgFile").onchange = (e) => {
       progressTarget = null; delete handlers[id]; setBusy(false);
       if (d.type === "caption") {
         pendingImage = d.text;
-        note.textContent = "وصف الصورة (بالإنجليزية): " + d.text + "\nاكتب سؤالك عنها.";
+        note.textContent = "وصف الصورة (بالإنجليزية): " + d.text + "\nاكتب سؤالك عنها وسأستخدم هذا الوصف.";
       } else { note.remove(); showError("فشل وصف الصورة: " + d.message); }
     };
     worker.postMessage({ type: "caption", id, url });
@@ -833,7 +784,7 @@ $("#imgFile").onchange = (e) => {
   reader.readAsDataURL(f);
 };
 
-// ===== Input =====
+/* ===== Input events ===== */
 function submit() { const t = input.value.trim(); if (!t) return; input.value = ""; fit(); ask(t); }
 sendBtn.onclick = submit;
 stopBtn.onclick = () => {
@@ -850,7 +801,7 @@ function hardReset() {
   respawnWorker();
   ["chat", "asr", "cap"].forEach((k) => setModel(k, "", 0));
   setBusy(false);
-  addMsg("assistant", "أُعيد تشغيل المحرّك. سيُعاد تحميل النموذج عند الرسالة التالية.");
+  addMsg("assistant", "أُعيد تشغيل المحرّك لأن التوليد لم يستجب. سيُعاد تحميل النموذج عند الرسالة التالية.");
 }
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); }
@@ -858,24 +809,24 @@ input.addEventListener("keydown", (e) => {
 const fit = () => { input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 160) + "px"; };
 input.addEventListener("input", fit);
 
-// ===== Models list =====
-// ✅ قائمة نظيفة: نماذج ONNX حقيقية بمفاتيح بسيطة بدون "/"
+/* ===== Model switcher + unload ===== */
 const CHAT_MODELS = {
-  qwen:      { name: "Xenova/Qwen1.5-0.5B-Chat",             kind: "chat",   size: "~500MB", group: "💬 دردشة (تتذكر السياق)" },
-  qwen25:    { name: "onnx-community/Qwen2.5-0.5B-Instruct", kind: "chat",   size: "~500MB", group: "💬 دردشة (تتذكر السياق)" },
-  qwen3:     { name: "onnx-community/Qwen3-0.6B-ONNX",       kind: "chat",   size: "~600MB", group: "💬 دردشة (تتذكر السياق)" },
-  lfm2:      { name: "onnx-community/LFM2-350M-ONNX",        kind: "chat",   size: "~350MB", group: "💬 دردشة (تتذكر السياق)" },
-  smol360:   { name: "onnx-community/SmolLM2-360M-Instruct", kind: "chat",   size: "~360MB", group: "💬 دردشة (تتذكر السياق)" },
-  smol135:   { name: "onnx-community/SmolLM2-135M-Instruct", kind: "chat",   size: "~140MB", group: "💬 دردشة (تتذكر السياق)" },
-  lamini:    { name: "Xenova/LaMini-Flan-T5-77M",            kind: "t5",     size: "~80MB",  group: "⚡ سريعة (سؤال وجواب)" },
-  lamini248: { name: "Xenova/LaMini-Flan-T5-248M",           kind: "t5",     size: "~250MB", group: "⚡ سريعة (سؤال وجواب)" },
-  flansmall: { name: "Xenova/flan-t5-small",                 kind: "t5",     size: "~60MB",  group: "⚡ سريعة (سؤال وجواب)" },
-  flanbase:  { name: "Xenova/flan-t5-base",                  kind: "t5",     size: "~250MB", group: "⚡ سريعة (سؤال وجواب)" },
-  t5small:   { name: "Xenova/t5-small",                      kind: "t5",     size: "~60MB",  group: "⚡ سريعة (سؤال وجواب)" },
-  distilgpt2:{ name: "Xenova/distilgpt2",                    kind: "alpaca", size: "~82MB",  group: "🐣 صغيرة جداً (إكمال نص)" },
-  gpt2:      { name: "Xenova/gpt2",                          kind: "alpaca", size: "~125MB", group: "🐣 صغيرة جداً (إكمال نص)" },
-  opt125:    { name: "Xenova/opt-125m",                      kind: "alpaca", size: "~130MB", group: "🐣 صغيرة جداً (إكمال نص)" },
-  lgpt:      { name: "Xenova/LaMini-GPT-124M",               kind: "alpaca", size: "~125MB", group: "🐣 صغيرة جداً (إكمال نص)" },
+  qwen:      { name: "Xenova/Qwen1.5-0.5B-Chat",             kind: "chat",   size: "~500MB", group: "دردشة (تتذكر السياق)" },
+  qwen25:    { name: "onnx-community/Qwen2.5-0.5B-Instruct", kind: "chat",   size: "~500MB", group: "دردشة (تتذكر السياق)" },
+  qwen3_06b: { name: "onnx-community/Qwen3-0.6B-ONNX",       kind: "chat",   size: "~400MB", group: "دردشة (تتذكر السياق)" },
+  lfm2:      { name: "onnx-community/LFM2-350M-ONNX",        kind: "chat",   size: "~350MB", group: "دردشة (تتذكر السياق)" },
+  smol360:   { name: "onnx-community/SmolLM2-360M-Instruct", kind: "chat",   size: "~200MB", group: "دردشة (تتذكر السياق)" },
+  smol135:   { name: "onnx-community/SmolLM2-135M-Instruct", kind: "chat",   size: "~140MB", group: "دردشة (تتذكر السياق)" },
+  lamini:    { name: "Xenova/LaMini-Flan-T5-77M",            kind: "t5",     size: "~80MB",  group: "سريعة جداً (سؤال وجواب)" },
+  lamini248: { name: "Xenova/LaMini-Flan-T5-248M",           kind: "t5",     size: "~250MB", group: "سريعة جداً (سؤال وجواب)" },
+  flansmall: { name: "Xenova/flan-t5-small",                 kind: "t5",     size: "~60MB",  group: "سريعة جداً (سؤال وجواب)" },
+  flanbase:  { name: "Xenova/flan-t5-base",                  kind: "t5",     size: "~250MB", group: "سريعة جداً (سؤال وجواب)" },
+  lgpt:      { name: "Xenova/LaMini-GPT-124M",               kind: "alpaca", size: "~125MB", group: "سريعة جداً (سؤال وجواب)" },
+
+  distilgpt2:     { name: "distilgpt2", kind: "chat", size: "~66MB", group: "دردشة (تتذكر السياق)" },
+  "gpt2":         { name: "EleutherAI/gpt2", kind: "chat", size: "~125MB", group: "دردشة (تتذكر السياق)" },
+  "opt-350m":     { name: "facebook/opt-350m", kind: "chat", size: "~350MB", group: "دردشة (تتذكر السياق)" },
+  "t5-base":      { name: "t5-base", kind: "t5", size: "~220MB", group: "سريعة جداً (سؤال وجواب)" },
 };
 const modelSel = $("#modelSel");
 const groups = {};
@@ -885,24 +836,25 @@ for (const [k, m] of Object.entries(CHAT_MODELS)) {
   o.value = k; o.textContent = `${m.name} (${m.size})`;
   groups[m.group].appendChild(o);
 }
-modelSel.value = "qwen25";
+modelSel.value = "qwen3_06b";
 let curModel = modelSel.value;
 function syncModelUI() {
   const m = CHAT_MODELS[curModel];
   $("#m-chat small").textContent = m.name;
-  $("#modelNote").textContent = (m.kind === "chat"
-    ? "يتذكر آخر الرسائل. أول تحميل ينزّل الحجم المذكور. "
-    : "يجيب على كل سؤال مستقلاً. صغير وسريع. ")
-    + (m.name.includes("Qwen") ? "Qwen هو الأفضل للعربية." : "للعربية يُفضَّل Qwen. هذا مناسب للإنجليزية.");
+  let note = m.kind === "chat" ? "يتذكر آخر الرسائل. أول تحميل ينزّل الحجم المذكور. " : "يجيب على كل سؤال بشكل مستقل. صغير وسريع. ";
+  note += m.name.includes("Qwen") ? "Qwen هو الأفضل للعربية بين النماذج المتاحة." : "للعربية يُفضّل Qwen. هذا النموذج مناسب للإنجليزية فقط.";
+  if (["distilgpt2", "gpt2", "opt-350m"].some(n => m.name.includes(n))) note += " نموذج خفيف وسريع، مناسب للاجهزة ذات الموارد المحدودة.";
+  if (m.kind === "t5") note += " نموذج ت5 يقدّم أداءً قوياً في المهام النصية.";
+  $("#modelNote").textContent = note;
 }
 if (!gpu) { $("#gpuOpt").disabled = true; }
 $("#gpuOpt").onchange = () => setModel("chat", "", 0);
 modelSel.onchange = () => {
-  if (sessions[currentSessionId].messages.length && !confirm("تغيير النموذج سيمسح المحادثة الحالية. متابعة؟")) { modelSel.value = curModel; return; }
+  if (sessions[currentSessionId].messages.length && !confirm("تغيير النموذج سيمسح المحادثة الحالية. هل تريد المتابعة؟")) { modelSel.value = curModel; return; }
   curModel = modelSel.value;
   sessions[currentSessionId].messages = []; pendingImage = ""; saveSessions(); loadSession(currentSessionId);
   setModel("chat", "", 0);
-  syncModelUI();
+  syncModelUI();   // the new model loads on the next message
 };
 syncModelUI();
 $("#unload").onclick = () => { if (!busy) worker.postMessage({ type: "unload" }); };
@@ -912,50 +864,27 @@ function onUnloaded() {
   addMsg("assistant", "تم تفريغ النماذج من الذاكرة. سيُعاد تحميل النموذج عند الرسالة التالية.");
 }
 
-// ===== Header / sidebar =====
-$("#clear").onclick = () => {
-  if (busy) worker.postMessage({ type: "stop" });
-  sessions[currentSessionId].messages = [];
+/* ===== Header / sidebar controls ===== */
+$("#clear").onclick = () => { 
+  if (busy) worker.postMessage({ type: "stop" }); 
+  sessions[currentSessionId].messages = []; 
   sessions[currentSessionId].title = "دردشة جديدة";
-  pendingImage = "";
-  saveSessions(); renderHistory(); loadSession(currentSessionId);
+  pendingImage = ""; 
+  saveSessions(); renderHistory(); loadSession(currentSessionId); 
 };
 $("#newChatBtn").onclick = () => {
-  currentSessionId = uid();
+  currentSessionId = crypto.randomUUID();
   sessions[currentSessionId] = { title: "دردشة جديدة", messages: [] };
   saveSessions(); renderHistory(); loadSession(currentSessionId);
-  closeSidebar();
+  if (window.innerWidth <= 800) $("#side").classList.remove("open");
 };
 $("#noteX").onclick = () => $("#note").remove();
-
-// ✅ Mobile sidebar with overlay
-function openSidebar() { $("#side").classList.add("open"); $("#overlay").classList.add("show"); }
-function closeSidebar() { $("#side").classList.remove("open"); $("#overlay").classList.remove("show"); }
-$("#menu").onclick = () => {
-  $("#side").classList.contains("open") ? closeSidebar() : openSidebar();
-};
-$("#overlay").onclick = closeSidebar;
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSidebar(); });
-
-// ✅ زر قراءة الرد بصوت (Web Speech API)
-const speakBtn = $("#speak");
-speakBtn.onclick = () => {
-  if (!('speechSynthesis' in window)) { showError("المتصفح لا يدعم تحويل النص إلى كلام."); return; }
-  window.speechSynthesis.cancel();
-  const msgs = sessions[currentSessionId]?.messages;
-  const lastAssistant = msgs?.filter(m => m.role === "assistant").pop();
-  if (!lastAssistant || !lastAssistant.content) { showError("لا يوجد رد لقراءته."); return; }
-  const utter = new SpeechSynthesisUtterance(lastAssistant.content);
-  utter.lang = /[\u0600-\u06FF]/.test(lastAssistant.content) ? "ar" : "en";
-  utter.onend = () => speakBtn.classList.remove("ok");
-  window.speechSynthesis.speak(utter);
-  speakBtn.classList.add("ok");
-};
+$("#menu").onclick = () => $("#side").classList.toggle("open");
+main.addEventListener("click", () => $("#side").classList.remove("open"));
 
 setBusy(false);
 renderHistory();
 loadSession(currentSessionId);
-input.focus();
 </script>
 </body>
 </html>
